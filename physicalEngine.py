@@ -40,14 +40,14 @@ class RightTriAngle:
         self.width = self.rightX-self.leftX
         if self.width<0:
             raise Exception("좌표 오류: 왼쪽 x좌표> 오른쪽 x좌표")
-        flag = False#빗변 기울기가 음수.
+        self.flag = False#빗변 기울기가 음수.
         if self.rightY>self.leftY:
-            flag = True
+            self.flag = True
         
         if flag:
-            self.aabbForCollision = AABB(leftCoordinate, rightCoordinate, 0)
+            self.AABBForCollision = AABB(leftCoordinate, rightCoordinate, 0)
         else:
-            self.aabbForCollision = AABB((self.leftX,self.rightY), (self.rightX, self.leftY))
+            self.AABBForCollision = AABB((self.leftX,self.rightY), (self.rightX, self.leftY))
         
 
     def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
@@ -61,6 +61,13 @@ class RightTriAngle:
         while self.maxX>SCREEN_SIZE[0]-10:
             self.moveX(acceleration,-1)
 
+    def isDotUnderHypotenuse(self, dot1):
+        x2MinusX1 = self.rightX-self.leftX
+        y2MinusY1 = self.rightY-self.leftY
+        if (y2MinusY1/x2MinusX1)*(dot1[0]-self.leftX) + self.leftY >dot1[1]:
+            return True
+        return False
+
 
 
 class Circle:
@@ -68,6 +75,7 @@ class Circle:
         self.centerX = position[0]
         self.centerY = position[1]
         self.radius = radius
+        self.AABBForCollision = AABB( (self.centerX-radius, self.centerY-radius), (self.centerX+radius, self.centerY+radius) )
 
     def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
         global FPS,SCREEN_SIZE
@@ -82,8 +90,13 @@ class Circle:
 class Collision:
     def __init__(self):
         pass
-    def getDistance(self,dot1, dot2):
+    def getDotvsDotDistance(self,dot1, dot2):
         return(math.sqrt((dot1[0]-dot2[0])**2 + (dot1[1]-dot2[1])**2))
+    def getLinevsDotDistance(self, lineDot1, lineDot2, dot1):
+        a = lineDot1[0]-lineDot2[0]
+        b = lineDot1[1]-lineDot2[1]
+        return abs(a*dot1[1] - b*dot1[0] + lineDot2[0]*b - lineDot2[1]*a)/(math.sqrt(a**2 + b**2))#점과 직선사이 공식.
+
     def AABBvsAABB(self, AABB1, AABB2):
         if AABB1.minX>AABB2.maxX or AABB2.minX>AABB1.maxX:
             return False
@@ -102,6 +115,26 @@ class Collision:
             return False
         else:
             return True
+    def AABBvsRightTriangle(self, AABB1, Triangle1):
+        if self.AABBvsAABB(AABB1, Triangle1.AABBForCollision):
+            if Triangle1.flag:
+                if Triangle1.isDotUnderHypotenuse((AABB1.maxX, AABB1.minY)):
+                   return True
+            else:
+                if Triangle1.isDotUnderHypotenuse((AABB1.minX, AABB1.minY)):
+                    return True
+        return False
+    def CirclevsRightTriangle(self, Circle1, Triangle1):
+        if self.AABBvsAABB(Circle1.AABBForCollision, Triangle1.AABBForCollision):
+            if self.AABBvsCircle(Triangle1.AABBForCollision, Circle1):
+                if Triangle1.isDotUnderHypotenuse((Circle1.centerX, Circle1.centerY)):
+                    return True
+                else:
+                    if self.getLinevsDotDistance((Triangle1.leftX, Triangle1.leftY), (Triangle1.rightX, Triangle1.rightY), (Circle1.centerX, Circle1.centerY)) < Circle1.radius:
+                        return True
+        return False
+                    
+
 
 #TEST`
 a = AABB((4,40), (50,400), 1)
