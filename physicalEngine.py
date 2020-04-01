@@ -1,6 +1,6 @@
-from subprocess import CompletedProcess
 
-import pygame
+import glfw
+from OpenGL.GL import *
 import numpy as np
 import math
 import sys
@@ -18,11 +18,43 @@ class AABB:
         self.maxY = maxCoordinate[1]
         if self.minX>self.maxX or self.minY>self.maxY:
             raise MinBiggerThanMaxError
+
     def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
         global FPS,SCREEN_SIZE
         speed = direction*(acceleration)
-        self.minX = self.minX + speed
-        self.maxX = self.maxX + speed
+        self.minX += speed
+        self.maxX += speed
+
+        while self.minX<10:
+            self.moveX(acceleration,1)
+        while self.maxX>SCREEN_SIZE[0]-10:
+            self.moveX(acceleration,-1)
+
+class RightTriAngle:
+    def __init__(self, leftCoordinate, rightCoordinate):
+        self.leftX = leftCoordinate[0]
+        self.leftY = leftCoordinate[1]
+        self.rightX = rightCoordinate[0]
+        self.rightY = rightCoordinate[1]
+        self.height = abs(self.leftY-self.rightY)
+        self.width = self.rightX-self.leftX
+        if self.width<0:
+            raise Exception("좌표 오류: 왼쪽 x좌표> 오른쪽 x좌표")
+        flag = False#빗변 기울기가 음수.
+        if self.rightY>self.leftY:
+            flag = True
+        
+        if flag:
+            self.aabbForCollision = AABB(leftCoordinate, rightCoordinate, 0)
+        else:
+            self.aabbForCollision = AABB((self.leftX,self.rightY), (self.rightX, self.leftY))
+        
+
+    def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
+        global FPS,SCREEN_SIZE
+        speed = direction*(acceleration)
+        self.leftX += speed
+        self.rightX += speed
 
         while self.minX<10:
             self.moveX(acceleration,1)
@@ -30,15 +62,17 @@ class AABB:
             self.moveX(acceleration,-1)
 
 
+
 class Circle:
     def __init__(self, position, radius):
         self.centerX = position[0]
         self.centerY = position[1]
         self.radius = radius
+
     def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
         global FPS,SCREEN_SIZE
         speed = direction*(acceleration)
-        self.centerX = self.centerX + speed
+        self.centerX += speed
 
         while self.centerX-self.radius<10:
             self.moveX(acceleration,1)
@@ -82,42 +116,5 @@ print(c.AABBvsCircle(a,e))
 print(c.AABBvsCircle(b,d))
 print(c.AABBvsCircle(b,e))
 
-pygame.init()
-SCREEN_SIZE = (1920,1080)
-screen = pygame.display.set_mode(SCREEN_SIZE)
-clock = pygame.time.Clock()
-
-FPS = 60
-time = int(1000/FPS)
-done = True
-keys = [False, False]
-while done:
-    pygame.time.wait(time)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            done = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_F4:
-                pygame.quit()
-                sys.exit()
-            if event.key == pygame.K_LEFT:
-                keys[0] = True
-            if event.key == pygame.K_RIGHT:
-                keys[1] = True
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT:
-                keys[0] = False
-            if event.key == pygame.K_RIGHT:
-                keys[1] = False
-
-    screen.fill((0,0,0))
-    if keys[0] == True:
-        a.moveX(1,-1)
-        d.moveX(1,-1)
-    if keys[1] == True:
-        a.moveX(1, 1)
-        d.moveX(1,1)
-    pygame.draw.circle(screen, (255,255,255), (int(d.centerX), int(d.centerY)), int(d.radius))
-   # pygame.draw.rect(screen, (255,255,255), (int((a.minX + a.maxX)//2), int((a.minY + a.maxY)//2), int(a.maxX-a.minX), int(a.maxY-a.minY)))
-
-    pygame.display.flip()
+FPS = 60 
+SCREEN_SIZE = (1920, 1080)
