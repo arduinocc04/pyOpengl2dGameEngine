@@ -17,7 +17,7 @@ glfw.set_window_pos(window, 400, 200)
 
 # make the context current
 glfw.make_context_current(window)
-```
+
 vertices = [-0.5, -0.5, 0.0,
              0.5, -0.5, 0.0,
              0.0,  0.5, 0.0]
@@ -47,7 +47,7 @@ while not glfw.window_should_close(window):
 
     glLoadIdentity()
     glScale(abs(sin(ct)), abs(sin(ct)), 1)
-    glRotatef(tan(ct) * 45, 0, 0, 1)
+    glRotatef(sin(ct) * 45, 0, 0, 1)
     glTranslatef(sin(ct), cos(ct), 0)
 
     glDrawArrays(GL_TRIANGLES, 0, 3)
