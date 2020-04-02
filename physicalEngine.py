@@ -44,7 +44,7 @@ class RightTriAngle:
         if self.rightY>self.leftY:
             self.flag = True
         
-        if flag:
+        if self.flag:
             self.AABBForCollision = AABB(leftCoordinate, rightCoordinate, 0)
         else:
             self.AABBForCollision = AABB((self.leftX,self.rightY), (self.rightX, self.leftY))
@@ -67,6 +67,20 @@ class RightTriAngle:
         if (y2MinusY1/x2MinusX1)*(dot1[0]-self.leftX) + self.leftY >dot1[1]:
             return True
         return False
+class Triangle:
+    def __init__(self, leftCoordinate, middleCoordiante, rightCoordinate):
+        self.leftX = leftCoordinate[0]
+        self.leftY = leftCoordinate[0]
+        self.middleX = middleCoordiante[0]
+        self.middleY = middleCoordiante[1]
+        self.rightX = rightCoordinate[0]
+        self.rightY = rightCoordinate[1]
+        if self.leftY != self.rightY or self.middleY <= self.rightY or self.leftX >= self.middleX or self.middleX >= self.rightX:
+            raise Exception("좌표 값이 이상합니다. 밑변이 ㅡ와 같은 모양이여야 하고(왼쪽 y == 오른쪽 y), 가운데 y가 가장 커야 하며, (왼쪽, 가운데, 오른쪽)순서로 인수를 입력해야 합니다.")
+        self.AABBForCollision = AABB((leftX, rightY), (rightX, middleY))
+        self.leftRightTriangleForCollision = RightTriAngle(leftCoordinate, middleCoordiante)
+        self.rightRightTriangleForCollision = RightTriAngle(middleCoordiante, rightCoordinate)
+
 
 
 
@@ -75,7 +89,7 @@ class Circle:
         self.centerX = position[0]
         self.centerY = position[1]
         self.radius = radius
-        self.AABBForCollision = AABB( (self.centerX-radius, self.centerY-radius), (self.centerX+radius, self.centerY+radius) )
+        self.AABBForCollision = AABB( (self.centerX-radius, self.centerY-radius), (self.centerX+radius, self.centerY+radius) ,0)
 
     def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
         global FPS,SCREEN_SIZE
@@ -105,7 +119,7 @@ class Collision:
         else:
             return True
     def CirclevsCircle(self, Circle1, Circle2):
-        if self.getDistance((Circle1.centerX, Circle1.centerY), (Circle2.centerX, Circle2.centerY)) < Circle1.radius + Circle2.radius:
+        if self.getDotvsDotDistance((Circle1.centerX, Circle1.centerY), (Circle2.centerX, Circle2.centerY)) < Circle1.radius + Circle2.radius:
             return True
         return False
     def AABBvsCircle(self, AABB1, Circle1):
@@ -115,24 +129,28 @@ class Collision:
             return False
         else:
             return True
-    def AABBvsRightTriangle(self, AABB1, Triangle1):
-        if self.AABBvsAABB(AABB1, Triangle1.AABBForCollision):
-            if Triangle1.flag:
-                if Triangle1.isDotUnderHypotenuse((AABB1.maxX, AABB1.minY)):
+    def AABBvsRightTriangle(self, AABB1, RightTriAngle1):
+        if self.AABBvsAABB(AABB1, RightTriAngle1.AABBForCollision):
+            if RightTriAngle1.flag:
+                if RightTriAngle1.isDotUnderHypotenuse((AABB1.maxX, AABB1.minY)):
                    return True
             else:
-                if Triangle1.isDotUnderHypotenuse((AABB1.minX, AABB1.minY)):
+                if RightTriAngle1.isDotUnderHypotenuse((AABB1.minX, AABB1.minY)):
                     return True
         return False
-    def CirclevsRightTriangle(self, Circle1, Triangle1):
-        if self.AABBvsAABB(Circle1.AABBForCollision, Triangle1.AABBForCollision):
-            if self.AABBvsCircle(Triangle1.AABBForCollision, Circle1):
-                if Triangle1.isDotUnderHypotenuse((Circle1.centerX, Circle1.centerY)):
+    def CirclevsRightTriangle(self, Circle1, RightTriAngle1):
+        if self.AABBvsAABB(Circle1.AABBForCollision, RightTriAngle1.AABBForCollision):
+            if self.AABBvsCircle(RightTriAngle1.AABBForCollision, Circle1):
+                if RightTriAngle1.isDotUnderHypotenuse((Circle1.centerX, Circle1.centerY)):
                     return True
                 else:
-                    if self.getLinevsDotDistance((Triangle1.leftX, Triangle1.leftY), (Triangle1.rightX, Triangle1.rightY), (Circle1.centerX, Circle1.centerY)) < Circle1.radius:
+                    if self.getLinevsDotDistance((RightTriAngle1.leftX, RightTriAngle1.leftY), (RightTriAngle1.rightX, RightTriAngle1.rightY), (Circle1.centerX, Circle1.centerY)) < Circle1.radius:
                         return True
         return False
+    def AABBvsTriangle(self, AABB1, TriAngle1):
+        if self.AABBvsAABB(AABB1, TriAngle1.AABBForCollision):
+
+
                     
 
 
@@ -143,11 +161,13 @@ c = Collision()
 print(c.AABBvsAABB(a,b))
 d = Circle((10,500), 40)
 e = Circle((2,4), 8)
+g = RightTriAngle((2,3),(10,6))
 print(c.CirclevsCircle(d,e))
 print(c.AABBvsCircle(a,d))
 print(c.AABBvsCircle(a,e))
 print(c.AABBvsCircle(b,d))
 print(c.AABBvsCircle(b,e))
+print(c.AABBvsRightTriangle(b,g))
 
 FPS = 60 
 SCREEN_SIZE = (1920, 1080)
