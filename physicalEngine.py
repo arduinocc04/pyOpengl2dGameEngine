@@ -30,7 +30,7 @@ class AABB:
         while self.maxX>SCREEN_SIZE[0]-10:
             self.moveX(acceleration,-1)
 
-class RightTriAngle:
+class RightTriangle:
     def __init__(self, leftCoordinate, rightCoordinate):
         self.leftX = leftCoordinate[0]
         self.leftY = leftCoordinate[1]
@@ -47,7 +47,7 @@ class RightTriAngle:
         if self.flag:
             self.AABBForCollision = AABB(leftCoordinate, rightCoordinate, 0)
         else:
-            self.AABBForCollision = AABB((self.leftX,self.rightY), (self.rightX, self.leftY))
+            self.AABBForCollision = AABB((self.leftX,self.rightY), (self.rightX, self.leftY), 0)
         
 
     def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
@@ -77,9 +77,9 @@ class Triangle:
         self.rightY = rightCoordinate[1]
         if self.leftY != self.rightY or self.middleY <= self.rightY or self.leftX >= self.middleX or self.middleX >= self.rightX:
             raise Exception("좌표 값이 이상합니다. 밑변이 ㅡ와 같은 모양이여야 하고(왼쪽 y == 오른쪽 y), 가운데 y가 가장 커야 하며, (왼쪽, 가운데, 오른쪽)순서로 인수를 입력해야 합니다.")
-        self.AABBForCollision = AABB((leftX, rightY), (rightX, middleY))
-        self.leftRightTriangleForCollision = RightTriAngle(leftCoordinate, middleCoordiante)
-        self.rightRightTriangleForCollision = RightTriAngle(middleCoordiante, rightCoordinate)
+        self.AABBForCollision = AABB((self.leftX, self.rightY), (self.rightX, self.middleY), 0)
+        self.leftRightTriangleForCollision = RightTriangle(leftCoordinate, middleCoordiante)
+        self.rightRightTriangleForCollision = RightTriangle(middleCoordiante, rightCoordinate)
 
 
 
@@ -131,37 +131,37 @@ class Collision:
             return False
         else:
             return True
-    def AABBvsRightTriangle(self, AABB1, RightTriAngle1):
-        if self.AABBvsAABB(AABB1, RightTriAngle1.AABBForCollision):
-            if AABB1.minX<= RightTriAngle1.leftX and AABB1.maxX>= RightTriAngle1.rightX:
+    def AABBvsRightTriangle(self, AABB1, RightTriangle1):
+        if self.AABBvsAABB(AABB1, RightTriangle1.AABBForCollision):
+            if AABB1.minX<= RightTriangle1.leftX and AABB1.maxX>= RightTriangle1.rightX:
                 return True
-            if RightTriAngle1.flag:
-                if RightTriAngle1.isDotUnderHypotenuse((AABB1.maxX, AABB1.minY)):
+            if RightTriangle1.flag:
+                if RightTriangle1.isDotUnderHypotenuse((AABB1.maxX, AABB1.minY)):
                    return True
             else:
-                if RightTriAngle1.isDotUnderHypotenuse((AABB1.minX, AABB1.minY)):
+                if RightTriangle1.isDotUnderHypotenuse((AABB1.minX, AABB1.minY)):
                     return True
         return False
-    def CirclevsRightTriangle(self, Circle1, RightTriAngle1):
-        if self.AABBvsAABB(Circle1.AABBForCollision, RightTriAngle1.AABBForCollision):
-            if self.AABBvsCircle(RightTriAngle1.AABBForCollision, Circle1):
-                if RightTriAngle1.isDotUnderHypotenuse((Circle1.centerX, Circle1.centerY)):
+    def CirclevsRightTriangle(self, Circle1, RightTriangle1):
+        if self.AABBvsAABB(Circle1.AABBForCollision, RightTriangle1.AABBForCollision):
+            if self.AABBvsCircle(RightTriangle1.AABBForCollision, Circle1):
+                if RightTriangle1.isDotUnderHypotenuse((Circle1.centerX, Circle1.centerY)):
                     return True
                 else:
-                    if self.getLinevsDotDistance((RightTriAngle1.leftX, RightTriAngle1.leftY), (RightTriAngle1.rightX, RightTriAngle1.rightY), (Circle1.centerX, Circle1.centerY)) < Circle1.radius:
+                    if self.getLinevsDotDistance((RightTriangle1.leftX, RightTriangle1.leftY), (RightTriangle1.rightX, RightTriangle1.rightY), (Circle1.centerX, Circle1.centerY)) < Circle1.radius:
                         return True
         return False
-    def AABBvsTriangle(self, AABB1, TriAngle1):
-        if self.AABBvsAABB(AABB1, TriAngle1.AABBForCollision):
-            if AABB1.minX<= TriAngle1.leftX and AABB1.maxX>= TriAngle1.rightX:
+    def AABBvsTriangle(self, AABB1, Triangle1):
+        if self.AABBvsAABB(AABB1, Triangle1.AABBForCollision):
+            if AABB1.minX<= Triangle1.leftX and AABB1.maxX>= Triangle1.rightX:
                 return True
-            if self.AABBvsRightTriangle(AABB1, TriAngle1.leftRightTriangleForCollision):
+            if self.AABBvsRightTriangle(AABB1, Triangle1.leftRightTriangleForCollision):
                 return True
-            if self.AABBvsRightTriangle(AABB1, TriAngle1.rightRightTriangleForCollision):
+            if self.AABBvsRightTriangle(AABB1, Triangle1.rightRightTriangleForCollision):
                 return True
-            if TriAngle1.leftRightTriangleForCollision.isDotUnderHypotenuse(((AABB1.minX + AABB1.maxX)/2, AABB1.minY)):
+            if Triangle1.leftRightTriangleForCollision.isDotUnderHypotenuse(((AABB1.minX + AABB1.maxX)/2, AABB1.minY)):
                 return True
-            if TriAngle1.rightRightTriangleForCollision.isDotUnderHypotenuse(((AABB1.minX + AABB1.maxX)/2, AABB1.minY)):
+            if Triangle1.rightRightTriangleForCollision.isDotUnderHypotenuse(((AABB1.minX + AABB1.maxX)/2, AABB1.minY)):
                 return True
         return False
 
@@ -181,7 +181,44 @@ print(c.AABBvsCircle(a,d))
 print(c.AABBvsCircle(a,e))
 print(c.AABBvsCircle(b,d))
 print(c.AABBvsCircle(b,e))
-print(c.AABBvsRightTriangle(b,g))
+print(c.AABBvsTriangle(b,g))
+
+import time
+
+COUNT = 60930
+
+a = time.time()
+b=[]
+for i in range(COUNT):
+    b.append(c.AABBvsAABB(AABB1=AABB((i,i), (2*i+1, 5*i+1), 0), AABB2=AABB((10, 100), (500, 600), 0)))
+print(time.time()-a)
+m = 0
+for i in range(len(b)):
+    if b[i]:
+        m += 1
+print("겹치는 사각형 개수: ",m)
+
+b = []
+a = time.time()
+for i in range(COUNT):
+    b.append(c.CirclevsCircle(Circle1=Circle((i,i), 5), Circle2=Circle((10, 100), 600)))
+print(time.time()-a)
+m = 0
+for i in range(len(b)):
+    if b[i]:
+        m += 1
+print("겹치는 원 개수: ",m)
+
+b=[]
+a = time.time()
+for i in range(COUNT):
+    b.append(c.AABBvsTriangle(AABB1=AABB((i,i),(2*i+1,3*i+1), 0), Triangle1=Triangle((10, 10), (30,100),(50,10))))
+print(time.time()-a)
+m = 0
+for i in range(len(b)):
+    if b[i]:
+        m += 1
+print("겹치는 AABB와 삼각형쌍의 개수: ",m)
 
 FPS = 60 
 SCREEN_SIZE = (1920, 1080)
