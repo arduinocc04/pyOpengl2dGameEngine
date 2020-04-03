@@ -70,7 +70,7 @@ class RightTriAngle:
 class Triangle:
     def __init__(self, leftCoordinate, middleCoordiante, rightCoordinate):
         self.leftX = leftCoordinate[0]
-        self.leftY = leftCoordinate[0]
+        self.leftY = leftCoordinate[1]
         self.middleX = middleCoordiante[0]
         self.middleY = middleCoordiante[1]
         self.rightX = rightCoordinate[0]
@@ -110,6 +110,8 @@ class Collision:
         a = lineDot1[0]-lineDot2[0]
         b = lineDot1[1]-lineDot2[1]
         return abs(a*dot1[1] - b*dot1[0] + lineDot2[0]*b - lineDot2[1]*a)/(math.sqrt(a**2 + b**2))#점과 직선사이 공식.
+    def LinevsLine(self, line1, line2):#일차방정식으로 넣기.
+        pass
 
     def AABBvsAABB(self, AABB1, AABB2):
         if AABB1.minX>AABB2.maxX or AABB2.minX>AABB1.maxX:
@@ -131,6 +133,8 @@ class Collision:
             return True
     def AABBvsRightTriangle(self, AABB1, RightTriAngle1):
         if self.AABBvsAABB(AABB1, RightTriAngle1.AABBForCollision):
+            if AABB1.minX<= RightTriAngle1.leftX and AABB1.maxX>= RightTriAngle1.rightX:
+                return True
             if RightTriAngle1.flag:
                 if RightTriAngle1.isDotUnderHypotenuse((AABB1.maxX, AABB1.minY)):
                    return True
@@ -149,7 +153,17 @@ class Collision:
         return False
     def AABBvsTriangle(self, AABB1, TriAngle1):
         if self.AABBvsAABB(AABB1, TriAngle1.AABBForCollision):
-
+            if AABB1.minX<= TriAngle1.leftX and AABB1.maxX>= TriAngle1.rightX:
+                return True
+            if self.AABBvsRightTriangle(AABB1, TriAngle1.leftRightTriangleForCollision):
+                return True
+            if self.AABBvsRightTriangle(AABB1, TriAngle1.rightRightTriangleForCollision):
+                return True
+            if TriAngle1.leftRightTriangleForCollision.isDotUnderHypotenuse(((AABB1.minX + AABB1.maxX)/2, AABB1.minY)):
+                return True
+            if TriAngle1.rightRightTriangleForCollision.isDotUnderHypotenuse(((AABB1.minX + AABB1.maxX)/2, AABB1.minY)):
+                return True
+        return False
 
                     
 
@@ -161,7 +175,7 @@ c = Collision()
 print(c.AABBvsAABB(a,b))
 d = Circle((10,500), 40)
 e = Circle((2,4), 8)
-g = RightTriAngle((2,3),(10,6))
+g = Triangle((2,3),(10,6), (15,3))
 print(c.CirclevsCircle(d,e))
 print(c.AABBvsCircle(a,d))
 print(c.AABBvsCircle(a,e))
