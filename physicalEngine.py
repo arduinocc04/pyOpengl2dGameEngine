@@ -164,112 +164,108 @@ class Collision:
             if Triangle1.rightRightTriangleForCollision.isDotUnderHypotenuse(((AABB1.minX + AABB1.maxX)/2, AABB1.minY)):
                 return True
         return False
-
-                    
+'''
+def collisionTestFunc(AABB):
+        a = Collision()
+        return (a.AABBvsAABB(AABB[0], AABB[1]))
+'''
+def control(START, COUNT, id):
+    a = Collision()
+    m = 0
+    for i in range(START,COUNT):
+        if a.AABBvsAABB(AABB((i,i), (2*i+1, 5*i+1), 0), AABB((10, 100), (500, 600), 0)):
+            m+= 1
+    print(f"===============id: {id}, 겹치는 사각형 개수: {m}=============")
 
 
 #TEST`
-a = AABB((4,40), (50,400), 1)
-b = AABB((2,3),(5,6), 1)
-c = Collision()
-print(c.AABBvsAABB(a,b))
-d = Circle((10,500), 40)
-e = Circle((2,4), 8)
-g = Triangle((2,3),(10,6), (15,3))
-print(c.CirclevsCircle(d,e))
-print(c.AABBvsCircle(a,d))
-print(c.AABBvsCircle(a,e))
-print(c.AABBvsCircle(b,d))
-print(c.AABBvsCircle(b,e))
-print(c.AABBvsTriangle(b,g))
-
-import time
-import multiprocessing
-from multiprocessing import Process
-
-
-
-COUNT = 60930
-
-a = time.time()
-b=[]
-for i in range(COUNT):
-    b.append((AABB((i,i), (2*i+1, 5*i+1), 0), AABB((10, 100), (500, 600), 0)))
-print("배열에 추가하는데 걸린시간: ",time.time()-a)
-
-d = []
-a = time.time()
-for i in range(len(b)):
-    d.append(c.AABBvsAABB(b[i][0], b[i][1]))
-print("사각형 충돌처리-일반 걸린시간: ", time.time()-a)
-
-m = 0
-for i in range(len(d)):
-    if d[i]:
-        m += 1
-print("겹치는 사각형 개수: ",m)
-
-
-def collisionTestFunc(AABB):
-    global d,c
-    for i in range(len(AABB)):
-        d.append(c.AABBvsAABB(AABB[i][0], AABB[i][1]))
-
-d = []
 if __name__ == "__main__":
+    import time
+    import multiprocessing
+    from multiprocessing import Process, Manager
+
     multiprocessing.freeze_support()
-    a = time.time()
-    p1 = Process(target=collisionTestFunc, args = b[:len(b)//4])
-    p2 = Process(target=collisionTestFunc, args = b[len(b)//4:len(b)//2])
-    p3 = Process(target=collisionTestFunc, args = b[len(b)//2:3*len(b)//4])
-    p4 = Process(target=collisionTestFunc, args = b[3*len(b)//4:])
-    p1.start()
-    p1.join()
-    p2.start()
-    p2.join()
-    p3.start()
-    p3.join()
-    p4.start()
-    p4.join()
-    print("사각형 충돌처리-multi 걸린시간: ", time.time()-a)
 
+    a = AABB((4,40), (50,400), 1)
+    b = AABB((2,3),(5,6), 1)
+    c = Collision()
+    print(c.AABBvsAABB(a,b))
+    d = Circle((10,500), 40)
+    e = Circle((2,4), 8)
+    g = Triangle((2,3),(10,6), (15,3))
+    print(c.CirclevsCircle(d,e))
+    print(c.AABBvsCircle(a,d))
+    print(c.AABBvsCircle(a,e))
+    print(c.AABBvsCircle(b,d))
+    print(c.AABBvsCircle(b,e))
+    print(c.AABBvsTriangle(b,g))
+    print("======init Finished=========")
+    COUNT = 5999999
+
+    
+
+    results = []
     m = 0
-    for i in range(len(d)):
-        if d[i]:
+    startTime = time.time()
+    for i in range(COUNT):
+        if c.AABBvsAABB(AABB((i,i), (2*i+1, 5*i+1), 0), AABB((10, 100), (500, 600), 0)):
+            m+= 1
+    print(f"===========사각형 충돌처리-일반 걸린시간: {time.time()-startTime}=========")
+    print(f"===========겹치는 사각형 개수: {m}=========================")
+    p1 = Process(target=control, args=(0, COUNT//4,1))
+    p2 = Process(target=control, args=(COUNT//4, COUNT//2, 2))
+    p3 = Process(target=control, args=(COUNT//2,3*COUNT//2, 3))
+    p4 = Process(target=control, args=(3*COUNT//2, COUNT,4))
+    print("===multiprocessingInit finished====")
+    startTime = time.time()
+    results = []
+    
+    p1.start()
+    print("=====p1 started======")
+    p2.start()
+    p3.start()
+    p4.start()
+    p1.join()
+    print("=====p1 joined======")
+    p2.join()
+    p3.join()
+    p4.join()
+    '''
+    procs = []
+
+    for i in range(4):
+        proc = Process(target=control, args=(COUNT,1))
+        procs.append(proc)
+        proc.start()
+
+    for proc in procs:
+        proc.join()
+    '''
+    print(f"===========사각형 충돌처리-multi 걸린시간: {time.time()-startTime}=========")
+
+    
+
+    b = []
+    startTime = time.time()
+    for i in range(COUNT):
+        b.append(c.CirclevsCircle(Circle1=Circle((i,i), 5), Circle2=Circle((10, 100), 600)))
+    print(f"===========원 충돌처리-multi 걸린시간: {time.time()-startTime}=========")
+    m = 0
+    for i in range(len(b)):
+        if b[i]:
             m += 1
-    print("겹치는 사각형 개수: ",m)
+    print(f"===========겹치는 원 개수: {m}=========================")
 
+    b=[]
+    startTime = time.time()
+    for i in range(COUNT):
+        b.append(c.AABBvsTriangle(AABB1=AABB((i,i),(2*i+1,3*i+1), 0), Triangle1=Triangle((10, 10), (30,100),(50,10))))
+    print(f"===========사각형,삼각형 충돌처리 걸린시간: {time.time()-startTime}=========")
+    m = 0
+    for i in range(len(b)):
+        if b[i]:
+            m += 1
+    print(f"===========겹치는 사각형, 삼각형 개수: {m}=========================")
 
-
-
-
-
-
-
-
-
-
-b = []
-a = time.time()
-for i in range(COUNT):
-    b.append(c.CirclevsCircle(Circle1=Circle((i,i), 5), Circle2=Circle((10, 100), 600)))
-print(time.time()-a)
-m = 0
-for i in range(len(b)):
-    if b[i]:
-        m += 1
-print("겹치는 원 개수: ",m)
-
-b=[]
-a = time.time()
-for i in range(COUNT):
-    b.append(c.AABBvsTriangle(AABB1=AABB((i,i),(2*i+1,3*i+1), 0), Triangle1=Triangle((10, 10), (30,100),(50,10))))
-print(time.time()-a)
-m = 0
-for i in range(len(b)):
-    if b[i]:
-        m += 1
-print("겹치는 AABB와 삼각형쌍의 개수: ",m)
-
-FPS = 60 
-SCREEN_SIZE = (1920, 1080)
+    FPS = 60 
+    SCREEN_SIZE = (1920, 1080)
