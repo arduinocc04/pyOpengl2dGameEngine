@@ -169,13 +169,13 @@ def collisionTestFunc(AABB):
         a = Collision()
         return (a.AABBvsAABB(AABB[0], AABB[1]))
 '''
-def control(START, COUNT, id):
+def control(arg):
     a = Collision()
     m = 0
-    for i in range(START,COUNT):
+    for i in range(arg[0], arg[1]):
         if a.AABBvsAABB(AABB((i,i), (2*i+1, 5*i+1), 0), AABB((10, 100), (500, 600), 0)):
             m+= 1
-    print(f"===============id: {id}, 겹치는 사각형 개수: {m}=============")
+    print(f"===============id: {arg[2]}, 겹치는 사각형 개수: {m}=============")
 
 
 #TEST`
@@ -183,6 +183,7 @@ if __name__ == "__main__":
     import time
     import multiprocessing
     from multiprocessing import Process, Manager
+    from functools import partial
 
     multiprocessing.freeze_support()
 
@@ -200,7 +201,7 @@ if __name__ == "__main__":
     print(c.AABBvsCircle(b,e))
     print(c.AABBvsTriangle(b,g))
     print("======init Finished=========")
-    COUNT = 5999999
+    COUNT = 59999
 
     
 
@@ -212,6 +213,7 @@ if __name__ == "__main__":
             m+= 1
     print(f"===========사각형 충돌처리-일반 걸린시간: {time.time()-startTime}=========")
     print(f"===========겹치는 사각형 개수: {m}=========================")
+    '''
     p1 = Process(target=control, args=(0, COUNT//4,1))
     p2 = Process(target=control, args=(COUNT//4, COUNT//2, 2))
     p3 = Process(target=control, args=(COUNT//2,3*COUNT//2, 3))
@@ -231,6 +233,7 @@ if __name__ == "__main__":
     p3.join()
     p4.join()
     '''
+    '''
     procs = []
 
     for i in range(4):
@@ -241,6 +244,9 @@ if __name__ == "__main__":
     for proc in procs:
         proc.join()
     '''
+    pool = multiprocessing.Pool(processes=4)
+    argues = [(0, COUNT//4, 1), (COUNT//4, COUNT//2, 2), (COUNT//2, COUNT*3//2, 3), (COUNT*3//2, COUNT, 4)]
+    pool.map(control, argues)
     print(f"===========사각형 충돌처리-multi 걸린시간: {time.time()-startTime}=========")
 
     
