@@ -30,6 +30,21 @@ class AABB:
         while self.maxX>SCREEN_SIZE[0]-10:
             self.moveX(acceleration,-1)
 
+class RotateableAABB:
+    def __init__(self, minCoordinate, maxCoordinate, mass):
+        self.dot1 = np.array([minCoordinate[0], minCoordinate[1]])
+        self.dot2 = np.array([maxCoordinate[0], minCoordinate[1]])
+        self.dot3 = np.array([maxCoordinate[0], maxCoordinate[1]])
+        self.dot4 = np.array([minCoordinate[0], maxCoordinate[1]])
+    def rotate(self, angle):
+        expression = np.array([[math.cos(angle), -math.sin(angle)]
+                                ,[math.sin(angle), math.cos(angle)]])
+        self.dot1 = np.dot(self.dot1, expression)
+        self.dot2 = np.dot(self.dot2, expression)
+        self.dot3 = np.dot(self.dot3, expression)
+        self.dot4 = np.dot(self.dot4, expression)
+        
+
 class RightTriangle:
     def __init__(self, leftCoordinate, rightCoordinate):
         self.leftX = leftCoordinate[0]
@@ -67,7 +82,6 @@ class RightTriangle:
         if (y2MinusY1/x2MinusX1)*(dot1[0]-self.leftX) + self.leftY >dot1[1]:
             return True
         return False
-    def isLine
 
 class Triangle:
     def __init__(self, leftCoordinate, middleCoordiante, rightCoordinate):
@@ -108,12 +122,15 @@ class Circle:
 class Collision:
     def __init__(self):
         pass
+
     def getDotvsDotDistance(self,dot1, dot2):
         return(math.sqrt((dot1[0]-dot2[0])**2 + (dot1[1]-dot2[1])**2))
+
     def getLinevsDotDistance(self, lineDot1, lineDot2, dot1):
         a = lineDot1[0]-lineDot2[0]
         b = lineDot1[1]-lineDot2[1]
         return abs(a*dot1[1] - b*dot1[0] + lineDot2[0]*b - lineDot2[1]*a)/(math.sqrt(a**2 + b**2))#점과 직선사이 공식.
+
     def LinevsLine(self, line1, line2):#일차방정식으로 넣기.
         pass
 
@@ -168,23 +185,10 @@ class Collision:
             if Triangle1.rightRightTriangleForCollision.isDotUnderHypotenuse(((AABB1.minX + AABB1.maxX)/2, AABB1.minY)):
                 return True
         return False
-'''
-def collisionTestFunc(AABB):
-        a = Collision()
-        return (a.AABBvsAABB(AABB[0], AABB[1]))
-'''
 
-
-
-
-
-
-def control(arg, count, id):
-    a = Collision()
-    m = 0
-    for i in range(arg, count):
-        if a.AABBvsTriangle(AABB1=AABB((i,i),(2*i+1,3*i+1), 0), Triangle1=Triangle((10, 10), (30,100),(50,10))):
-            m+= 1
-    print(f"===============id: {id}, 겹치는 사각형,삼각형 개수: {m}=============")
-
-
+if __name__ == "__main__":
+    FPS = 60
+    SCREEN_SIZE = (1920, 1080)
+    a = RotateableAABB((3,5),(4,8),0)
+    a.rotate(90)
+    print(a.dot1, a.dot2, a.dot3, a.dot4)

@@ -5,6 +5,14 @@ from functools import partial
 from threading import Thread
 from physicalEngine import *
 
+def control(arg, count, id):
+    a = Collision()
+    m = 0
+    for i in range(arg, count):
+        if a.AABBvsTriangle(AABB1=AABB((i,i),(2*i+1,3*i+1), 0), Triangle1=Triangle((10, 10), (30,100),(50,10))):
+            m+= 1
+    print(f"===============id: {id}, 겹치는 사각형,삼각형 개수: {m}=============")
+    
 #TEST`
 if __name__ == "__main__":
 
