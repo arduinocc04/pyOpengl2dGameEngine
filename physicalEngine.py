@@ -184,19 +184,70 @@ print(c.AABBvsCircle(b,e))
 print(c.AABBvsTriangle(b,g))
 
 import time
+import multiprocessing
+from multiprocessing import Process
+
+
 
 COUNT = 60930
 
 a = time.time()
 b=[]
 for i in range(COUNT):
-    b.append(c.AABBvsAABB(AABB1=AABB((i,i), (2*i+1, 5*i+1), 0), AABB2=AABB((10, 100), (500, 600), 0)))
-print(time.time()-a)
-m = 0
+    b.append((AABB((i,i), (2*i+1, 5*i+1), 0), AABB((10, 100), (500, 600), 0)))
+print("배열에 추가하는데 걸린시간: ",time.time()-a)
+
+d = []
+a = time.time()
 for i in range(len(b)):
-    if b[i]:
+    d.append(c.AABBvsAABB(b[i][0], b[i][1]))
+print("사각형 충돌처리-일반 걸린시간: ", time.time()-a)
+
+m = 0
+for i in range(len(d)):
+    if d[i]:
         m += 1
 print("겹치는 사각형 개수: ",m)
+
+
+def collisionTestFunc(AABB):
+    global d,c
+    for i in range(len(AABB)):
+        d.append(c.AABBvsAABB(AABB[i][0], AABB[i][1]))
+
+d = []
+if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    a = time.time()
+    p1 = Process(target=collisionTestFunc, args = b[:len(b)//4])
+    p2 = Process(target=collisionTestFunc, args = b[len(b)//4:len(b)//2])
+    p3 = Process(target=collisionTestFunc, args = b[len(b)//2:3*len(b)//4])
+    p4 = Process(target=collisionTestFunc, args = b[3*len(b)//4:])
+    p1.start()
+    p1.join()
+    p2.start()
+    p2.join()
+    p3.start()
+    p3.join()
+    p4.start()
+    p4.join()
+    print("사각형 충돌처리-multi 걸린시간: ", time.time()-a)
+
+    m = 0
+    for i in range(len(d)):
+        if d[i]:
+            m += 1
+    print("겹치는 사각형 개수: ",m)
+
+
+
+
+
+
+
+
+
+
 
 b = []
 a = time.time()

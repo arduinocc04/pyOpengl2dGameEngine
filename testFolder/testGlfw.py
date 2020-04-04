@@ -6,14 +6,14 @@ from math import sin, cos
 if not glfw.init():
     raise Exception("glfw can not be initialized!")
 
+SCREEN_SIZE = (1280,720)
 
-window = glfw.create_window(1280, 720, "My OpenGL window", None, None)
+
+window = glfw.create_window(SCREEN_SIZE[0], SCREEN_SIZE[1], "My OpenGL window", None, None)
 
 if not window:
     glfw.terminate()
     raise Exception("glfw window can not be created!")
-
-glfw.set_window_pos(window, 400, 200)
 
 # make the context current
 glfw.make_context_current(window)
@@ -51,6 +51,7 @@ while not glfw.window_should_close(window):
     glTranslatef(sin(ct), cos(ct), 0)
 
     glDrawArrays(GL_TRIANGLES, 0, 3)
+    glRectf(-0.8, 0.8, 0.8, -0.8)
 
     glfw.swap_buffers(window)
 
