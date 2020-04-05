@@ -33,6 +33,7 @@ class RotateableAABB:
         self.dot2 = expression + self.dot2
         self.dot3 = expression + self.dot3
         self.dot4 = expression + self.dot4
+        self.centeroidDot = expression + self.centeroidDot
 
         minX = min(self.dot1[0], self.dot2[0], self.dot3[0], self.dot4[0])
         maxX = max(self.dot1[0], self.dot2[0], self.dot3[0], self.dot4[0])
@@ -99,6 +100,7 @@ class RightTriangle:
         self.leftDot = expression + self.leftDot
         self.rightDot = expression + self.rightDot
         self.otherDot = expression + self.otherDot
+        self.centeroidDot = expression + self.centeroidDot
 
         minX = min(self.leftDot[0], self.rightDot[0], self.otherDot[0])
         maxX = max(self.leftDot[0], self.rightDot[0], self.otherDot[0])
@@ -162,6 +164,7 @@ class Triangle:
         self.leftDot = expression + self.leftDot
         self.middleDot = expression + self.middleDot
         self.rightDot = expression + self.rightDot
+        self.centeroidDot = expression + self.centeroidDot
 
         minX = min(self.leftDot[0], self.rightDot[0], self.middleDot[0])
         maxX = max(self.leftDot[0], self.rightDot[0], self.middleDot[0])
@@ -207,6 +210,7 @@ class Circle:
         speed = direction*(acceleration)
         expression = np.array([speed, 0])
         self.centerDot = expression + self.centerDot
+        self.centeroidDot = expression + self.centeroidDot
         if self.centerDot[0] < 10:
             self.moveX(acceleration,1)
         if self.centerDot[0] > SCREEN_SIZE[0]-10:
