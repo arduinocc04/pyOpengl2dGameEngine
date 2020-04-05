@@ -9,31 +9,44 @@ class MinBiggerThanMaxError(Exception):
 
 class AABB:
     def __init__(self, minCoordinate, maxCoordinate, mass):
-        self.minX = minCoordinate[0]
-        self.minY = minCoordinate[1]
-        self.maxX = maxCoordinate[0]
-        self.maxY = maxCoordinate[1]
-        if self.minX>self.maxX or self.minY>self.maxY:
+        if minCoordinate[0]>maxCoordinate[0] or minCoordinate[1]>maxCoordinate[1]:
             raise MinBiggerThanMaxError
 
-    def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
-        global FPS,SCREEN_SIZE
-        speed = direction*(acceleration)
-        self.minX += speed
-        self.maxX += speed
-
-        while self.minX<10:
-            self.moveX(acceleration,1)
-        while self.maxX>SCREEN_SIZE[0]-10:
-            self.moveX(acceleration,-1)
-
-class RotateableAABB:
-    def __init__(self, minCoordinate, maxCoordinate, mass):
         self.dot1 = np.array([minCoordinate[0], minCoordinate[1]])
         self.dot2 = np.array([maxCoordinate[0], minCoordinate[1]])
         self.dot3 = np.array([maxCoordinate[0], maxCoordinate[1]])
         self.dot4 = np.array([minCoordinate[0], maxCoordinate[1]])
+
+class RotateableAABB:
+    def __init__(self, minCoordinate, maxCoordinate, mass, angle=0):
+        self.dot1 = np.array([minCoordinate[0], minCoordinate[1]])
+        self.dot2 = np.array([maxCoordinate[0], minCoordinate[1]])
+        self.dot3 = np.array([maxCoordinate[0], maxCoordinate[1]])
+        self.dot4 = np.array([minCoordinate[0], maxCoordinate[1]])
+        self.angle = angle
+        if angle:
+            self.rotate(angle)
+
+    def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
+        global FPS,SCREEN_SIZE
+        speed = direction*(acceleration)
+        expression = np.array([speed, 0])
+        self.dot1 = expression + self.dot1
+        self.dot2 = expression + self.dot2
+        self.dot3 = expression + self.dot3
+        self.dot4 = expression + self.dot4
+
+        minX = min(self.dot1[0], self.dot2[0], self.dot3[0], self.dot4[0])
+        maxX = max(self.dot1[0], self.dot2[0], self.dot3[0], self.dot4[0])
+
+        if minX < 10:
+            self.moveX(acceleration,1)
+        if maxX > SCREEN_SIZE[0]-10:
+            self.moveX(acceleration,-1)
+        return 0
+
     def rotate(self, angle):
+        self.angle += angle
         if angle == 90:
             expression = np.array([[0, -1], [1, 0]])
         elif angle == 180:
@@ -42,45 +55,66 @@ class RotateableAABB:
             expression = np.array([[0, 1], [-1, 0]])
         else:
             angle = math.radians(angle)
-            expression = np.array([[math.cos(angle), -math.sin(angle)]
-                            ,[math.sin(angle), math.cos(angle)]])
+            expression = np.array([[math.cos(angle), -math.sin(angle)], [math.sin(angle), math.cos(angle)]])
 
         self.dot1 = np.dot(expression, self.dot1.T)
         self.dot2 = np.dot(expression, self.dot2.T)
         self.dot3 = np.dot(expression, self.dot3.T)
         self.dot4 = np.dot(expression, self.dot4.T)
+
+        for i in range(2):
+            self.dot1[i] = round(self.dot1[i])
+            self.dot2[i] = round(self.dot2[i])
+            self.dot3[i] = round(self.dot3[i])
+            self.dot4[i] = round(self.dot4[i])
+
+        minX = min(self.dot1[0], self.dot2[0], self.dot3[0], self.dot4[0])
+        minY = min(self.dot1[1], self.dot2[1], self.dot3[1], self.dot4[1])
+        maxX = max(self.dot1[0], self.dot2[0], self.dot3[0], self.dot4[0])
+        maxY = max(self.dot1[1], self.dot2[1], self.dot3[1], self.dot4[1])
+        self.AABBForCollision = AABB((minX, minY), (maxX, maxY), 0)
+        return angle
         
 
 class RightTriangle:
-    def __init__(self, leftCoordinate, rightCoordinate):
-        self.leftX = leftCoordinate[0]
-        self.leftY = leftCoordinate[1]
-        self.rightX = rightCoordinate[0]
-        self.rightY = rightCoordinate[1]
-        self.height = abs(self.leftY-self.rightY)
-        self.width = self.rightX-self.leftX
+    def __init__(self, leftCoordinate, rightCoordinate, angle=0):
+        self.leftDot = np.array(leftCoordinate)
+        self.rightDot = np.array(rightCoordinate)
+        self.otherDot = np.array(rightCoordinate[0], leftCoordinate[1])
+        self.angle = angle
+        if angle:
+            self.rotate(angle)
+        self.height = abs(self.leftDot[1]-self.rightDot[1])
+        self.width = self.rightDot[0]-self.leftDot[0]
+
         if self.width<0:
             raise Exception("좌표 오류: 왼쪽 x좌표> 오른쪽 x좌표")
         self.flag = False#빗변 기울기가 음수.
-        if self.rightY>self.leftY:
+        if self.rightDot[1]>self.leftDot[1]:
             self.flag = True
         
         if self.flag:
             self.AABBForCollision = AABB(leftCoordinate, rightCoordinate, 0)
         else:
-            self.AABBForCollision = AABB((self.leftX,self.rightY), (self.rightX, self.leftY), 0)
+            self.AABBForCollision = AABB((self.leftDot[0], self.rightDot[1]), (self.rightDot[0], self.leftDot[1]), 0)
         
 
     def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
         global FPS,SCREEN_SIZE
         speed = direction*(acceleration)
-        self.leftX += speed
-        self.rightX += speed
+        expression = np.array([speed, 0])
+        self.leftDot = expression + self.leftDot
+        self.rightDot = expression + self.rightDot
+        self.otherDot = expression + self.otherDot
 
-        while self.minX<10:
+        minX = min(self.leftDot[0], self.rightDot[0], self.otherDot[0])
+        maxX = max(self.leftDot[0], self.rightDot[0], self.otherDot[0])
+
+        if minX < 10:
             self.moveX(acceleration,1)
-        while self.maxX>SCREEN_SIZE[0]-10:
+        if maxX > SCREEN_SIZE[0]-10:
             self.moveX(acceleration,-1)
+        return 0
 
     def isDotUnderHypotenuse(self, dot1):
         x2MinusX1 = self.rightX-self.leftX
@@ -89,41 +123,109 @@ class RightTriangle:
             return True
         return False
 
-class Triangle:
-    def __init__(self, leftCoordinate, middleCoordiante, rightCoordinate):
-        self.leftX = leftCoordinate[0]
-        self.leftY = leftCoordinate[1]
-        self.middleX = middleCoordiante[0]
-        self.middleY = middleCoordiante[1]
-        self.rightX = rightCoordinate[0]
-        self.rightY = rightCoordinate[1]
+    def rotate(self, angle):
+        self.angle += angle
+        if angle == 90:
+            expression = np.array([[0, -1], [1, 0]])
+        elif angle == 180:
+            expression = np.array([[-1, 0], [0, -2]])
+        elif angle == 270:
+            expression = np.array([[0, 1], [-1, 0]])
+        else:
+            angle = math.radians(angle)
+            expression = np.array([[math.cos(angle), -math.sin(angle)],[math.sin(angle), math.cos(angle)]])
 
-        if self.leftY != self.rightY or self.middleY <= self.rightY or self.leftX >= self.middleX or self.middleX >= self.rightX:
+        self.leftDot = np.dot(expression, self.leftDot.T)
+        self.rightDot = np.dot(expression, self.rightDot.T)
+        self.otherDot = np.dot(expression, self.otherDot.T)
+        for i in range(2):
+            self.leftDot[i] = round(self.leftDot[i])
+            self.rightDot[i] = round(self.rightDot[i])
+            self.otherDot[i] = round(self.otherDot[i])
+        xList = [self.leftDot[0], self.rightDot[0], self.otherDot[0]]
+        yList = [self.leftDot[1], self.rightDot[1], self.otherDot[1]]
+        self.AABBForCollision = AABB((min(xList), min(yList)), (max(xList), max(yList)), 0)
+        return angle
+
+
+class Triangle:
+    def __init__(self, leftCoordinate, middleCoordinate, rightCoordinate, angle=0):
+        self.leftDot = np.array(leftCoordinate)
+        self.middleDot = np.array(middleCoordinate)
+        self.rightDot = np.array(rightCoordinate)
+        self.angle = angle
+        if angle:
+            self.rotate(angle) 
+
+        if leftCoordinate[1] != rightCoordinate[1] or middleCoordinate[1] <= rightCoordinate[1] or leftCoordinate[0] >= middleCoordinate[0] or middleCoordinate[0] >= rightCoordinate[0]:
             raise Exception("좌표 값이 이상합니다. 밑변이 ㅡ와 같은 모양이여야 하고(왼쪽 y == 오른쪽 y), 가운데 y가 가장 커야 하며, (왼쪽, 가운데, 오른쪽)순서로 인수를 입력해야 합니다.")
         
-        self.AABBForCollision = AABB((self.leftX, self.rightY), (self.rightX, self.middleY), 0)
-        self.leftRightTriangleForCollision = RightTriangle(leftCoordinate, middleCoordiante)
-        self.rightRightTriangleForCollision = RightTriangle(middleCoordiante, rightCoordinate)
+        self.AABBForCollision = AABB((leftCoordinate[0], rightCoordinate[1]), (rightCoordinate[0], middleCoordinate[1]), 0)
+        self.leftRightTriangleForCollision = RightTriangle(leftCoordinate, middleCoordinate)
+        self.rightRightTriangleForCollision = RightTriangle(middleCoordinate, rightCoordinate)
+
+    def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
+        global FPS,SCREEN_SIZE
+        speed = direction*(acceleration)
+        expression = np.array([speed, 0])
+        self.leftDot = expression + self.leftDot
+        self.middleDot = expression + self.middleDot
+        self.rightDot = expression + self.rightDot
+
+        minX = min(self.leftDot[0], self.rightDot[0], self.middleDot[0])
+        maxX = max(self.leftDot[0], self.rightDot[0], self.middleDot[0])
+
+        if minX < 10:
+            self.moveX(acceleration,1)
+        if maxX > SCREEN_SIZE[0]-10:
+            self.moveX(acceleration,-1)
+        return 0
+
+    def rotate(self, angle):
+        self.angle += angle
+        if angle == 90:
+            expression = np.array([[0, -1], [1, 0]])
+        elif angle == 180:
+            expression = np.array([[-1, 0], [0, -2]])
+        elif angle == 270:
+            expression = np.array([[0, 1], [-1, 0]])
+        else:
+            angle = math.radians(angle)
+            expression = np.array([[math.cos(angle), -math.sin(angle)],[math.sin(angle), math.cos(angle)]])
+
+        self.leftDot = np.dot(expression, self.leftDot.T)
+        self.middleDot = np.dot(expression, self.middleDot.T)
+        self.rightDot = np.dot(expression, self.rightDot.T)
+
+        for i in range(2):
+            self.leftDot[i] = round(self.leftDot[i])
+            self.rightDot[i] = round(self.rightDot[i])
+            self.middleDot[i] = round(self.middleDot[i])
+
+        xList = [self.leftDot[0], self.rightDot[0], self.middleDot[0]]
+        yList = [self.leftDot[1], self.rightDot[1], self.middleDot[1]]
+        self.AABBForCollision = AABB((min(xList), min(yList)), (max(xList), max(yList)), 0)
+        return angle
 
 
 
 
 class Circle:
     def __init__(self, position, radius):
-        self.centerX = position[0]
-        self.centerY = position[1]
+        self.centerDot = np.array(position)
         self.radius = radius
         self.AABBForCollision = AABB( (self.centerX-radius, self.centerY-radius), (self.centerX+radius, self.centerY+radius) ,0)
 
     def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
         global FPS,SCREEN_SIZE
         speed = direction*(acceleration)
-        self.centerX += speed
-
-        while self.centerX-self.radius<10:
+        expression = np.array([speed, 0])
+        self.centerDot = expression + self.centerDot
+        if self.centerDot[0] < 10:
             self.moveX(acceleration,1)
-        while self.centerX+self.radius>SCREEN_SIZE[0]-10:
+        if self.centerDot[0] > SCREEN_SIZE[0]-10:
             self.moveX(acceleration,-1)
+        return 0
 
 class Collision:
     def __init__(self):
@@ -193,8 +295,13 @@ class Collision:
         return False
 
 if __name__ == "__main__":
+    import time
     FPS = 60
     SCREEN_SIZE = (1920, 1080)
     a = RotateableAABB((3,5),(4,8),0)
     a.rotate(80)
     print(a.dot1, a.dot2, a.dot3, a.dot4)
+    for i in range(100):
+        a.moveX(10,1)
+        print(a.dot1, a.dot2, a.dot3, a.dot4)
+        time.sleep(0.1)
