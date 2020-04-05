@@ -2,15 +2,12 @@ import numpy as np
 import math
 import sys
 
-class MinBiggerThanMaxError(Exception):
-    def __init__(self):
-        super().__init__("Min값이 Max값보다 큽니다.")
 
 
 class AABB:
     def __init__(self, minCoordinate, maxCoordinate, mass):
         if minCoordinate[0]>maxCoordinate[0] or minCoordinate[1]>maxCoordinate[1]:
-            raise MinBiggerThanMaxError
+            raise Exception("Min값이 Max값보다 큽니다.")
 
         self.dot1 = np.array([minCoordinate[0], minCoordinate[1]])
         self.dot2 = np.array([maxCoordinate[0], minCoordinate[1]])
@@ -23,6 +20,7 @@ class RotateableAABB:
         self.dot2 = np.array([maxCoordinate[0], minCoordinate[1]])
         self.dot3 = np.array([maxCoordinate[0], maxCoordinate[1]])
         self.dot4 = np.array([minCoordinate[0], maxCoordinate[1]])
+        self.centeroidDot = np.array([(minCoordinate[0] + maxCoordinate[0])//2, (minCoordinate[1] + maxCoordinate[1])//2])
         self.angle = angle
         if angle:
             self.rotate(angle)
@@ -57,16 +55,10 @@ class RotateableAABB:
             angle = math.radians(angle)
             expression = np.array([[math.cos(angle), -math.sin(angle)], [math.sin(angle), math.cos(angle)]])
 
-        self.dot1 = np.dot(expression, self.dot1.T)
-        self.dot2 = np.dot(expression, self.dot2.T)
-        self.dot3 = np.dot(expression, self.dot3.T)
-        self.dot4 = np.dot(expression, self.dot4.T)
-
-        for i in range(2):
-            self.dot1[i] = round(self.dot1[i])
-            self.dot2[i] = round(self.dot2[i])
-            self.dot3[i] = round(self.dot3[i])
-            self.dot4[i] = round(self.dot4[i])
+        self.dot1 = np.dot(expression, (self.dot1-self.centeroidDot).T) + self.centeroidDot
+        self.dot2 = np.dot(expression, (self.dot2-self.centeroidDot).T) + self.centeroidDot
+        self.dot3 = np.dot(expression, (self.dot3-self.centeroidDot).T) + self.centeroidDot
+        self.dot4 = np.dot(expression, (self.dot4-self.centeroidDot).T) + self.centeroidDot
 
         minX = min(self.dot1[0], self.dot2[0], self.dot3[0], self.dot4[0])
         minY = min(self.dot1[1], self.dot2[1], self.dot3[1], self.dot4[1])
@@ -81,6 +73,7 @@ class RightTriangle:
         self.leftDot = np.array(leftCoordinate)
         self.rightDot = np.array(rightCoordinate)
         self.otherDot = np.array(rightCoordinate[0], leftCoordinate[1])
+        self.centeroidDot = np.array([(self.leftDot[0] + self.rightDot[0] + self.otherDot[0])/3, (self.leftDot[1] + self.rightDot[1] + self.otherDot[1])/3])
         self.angle = angle
         if angle:
             self.rotate(angle)
@@ -135,13 +128,10 @@ class RightTriangle:
             angle = math.radians(angle)
             expression = np.array([[math.cos(angle), -math.sin(angle)],[math.sin(angle), math.cos(angle)]])
 
-        self.leftDot = np.dot(expression, self.leftDot.T)
-        self.rightDot = np.dot(expression, self.rightDot.T)
-        self.otherDot = np.dot(expression, self.otherDot.T)
-        for i in range(2):
-            self.leftDot[i] = round(self.leftDot[i])
-            self.rightDot[i] = round(self.rightDot[i])
-            self.otherDot[i] = round(self.otherDot[i])
+        self.leftDot = np.dot(expression, (self.leftDot-self.centeroidDot).T) + self.centeroidDot
+        self.rightDot = np.dot(expression, (self.rightDot-self.centeroidDot).T) + self.centeroidDot
+        self.otherDot = np.dot(expression, (self.otherDot-self.centeroidDot).T) + self.centeroidDot
+
         xList = [self.leftDot[0], self.rightDot[0], self.otherDot[0]]
         yList = [self.leftDot[1], self.rightDot[1], self.otherDot[1]]
         self.AABBForCollision = AABB((min(xList), min(yList)), (max(xList), max(yList)), 0)
@@ -153,6 +143,7 @@ class Triangle:
         self.leftDot = np.array(leftCoordinate)
         self.middleDot = np.array(middleCoordinate)
         self.rightDot = np.array(rightCoordinate)
+        self.centeroidDot = np.array([(self.leftDot[0] + self.rightDot[0] + self.middleDot[0])/3, (self.leftDot[1] + self.rightDot[1] + self.middleDot[1])/3])
         self.angle = angle
         if angle:
             self.rotate(angle) 
@@ -193,14 +184,9 @@ class Triangle:
             angle = math.radians(angle)
             expression = np.array([[math.cos(angle), -math.sin(angle)],[math.sin(angle), math.cos(angle)]])
 
-        self.leftDot = np.dot(expression, self.leftDot.T)
-        self.middleDot = np.dot(expression, self.middleDot.T)
-        self.rightDot = np.dot(expression, self.rightDot.T)
-
-        for i in range(2):
-            self.leftDot[i] = round(self.leftDot[i])
-            self.rightDot[i] = round(self.rightDot[i])
-            self.middleDot[i] = round(self.middleDot[i])
+        self.leftDot = np.dot(expression, (self.leftDot-self.centeroidDot).T) + self.centeroidDot
+        self.rightDot = np.dot(expression, (self.rightDot-self.centeroidDot).T) + self.centeroidDot
+        self.middleDot = np.dot(expression, (self.middleDot-self.centeroidDot).T) + self.centeroidDot
 
         xList = [self.leftDot[0], self.rightDot[0], self.middleDot[0]]
         yList = [self.leftDot[1], self.rightDot[1], self.middleDot[1]]
