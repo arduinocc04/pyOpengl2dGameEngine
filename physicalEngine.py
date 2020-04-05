@@ -1,6 +1,3 @@
-
-import glfw
-from OpenGL.GL import *
 import numpy as np
 import math
 import sys
@@ -37,12 +34,21 @@ class RotateableAABB:
         self.dot3 = np.array([maxCoordinate[0], maxCoordinate[1]])
         self.dot4 = np.array([minCoordinate[0], maxCoordinate[1]])
     def rotate(self, angle):
-        expression = np.array([[math.cos(angle), -math.sin(angle)]
-                                ,[math.sin(angle), math.cos(angle)]])
-        self.dot1 = np.dot(self.dot1, expression)
-        self.dot2 = np.dot(self.dot2, expression)
-        self.dot3 = np.dot(self.dot3, expression)
-        self.dot4 = np.dot(self.dot4, expression)
+        if angle == 90:
+            expression = np.array([[0, -1], [1, 0]])
+        elif angle == 180:
+            expression = np.array([[-1, 0], [0, -2]])
+        elif angle == 270:
+            expression = np.array([[0, 1], [-1, 0]])
+        else:
+            angle = math.radians(angle)
+            expression = np.array([[math.cos(angle), -math.sin(angle)]
+                            ,[math.sin(angle), math.cos(angle)]])
+
+        self.dot1 = np.dot(expression, self.dot1.T)
+        self.dot2 = np.dot(expression, self.dot2.T)
+        self.dot3 = np.dot(expression, self.dot3.T)
+        self.dot4 = np.dot(expression, self.dot4.T)
         
 
 class RightTriangle:
@@ -190,5 +196,5 @@ if __name__ == "__main__":
     FPS = 60
     SCREEN_SIZE = (1920, 1080)
     a = RotateableAABB((3,5),(4,8),0)
-    a.rotate(90)
+    a.rotate(80)
     print(a.dot1, a.dot2, a.dot3, a.dot4)
