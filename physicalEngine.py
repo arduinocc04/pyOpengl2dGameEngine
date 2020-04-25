@@ -19,7 +19,7 @@ class RotateableAABB:
         dot3 = np.array([AABBDot2[0], AABBDot2[1]])
         dot4 = np.array([AABBDot1[0], AABBDot2[1]])
 
-        self.centeroidDot = np.array([(AABBDot1[0] + AABBDot2[0])//2, (AABBDot1[1] + AABBDot2[1])//2])
+        self.centeroidDot = np.array([(AABBDot1[0] + AABBDot2[0])/2, (AABBDot1[1] + AABBDot2[1])/2])
         self.dotList = [dot1, dot2, dot3, dot4]
 
         self.angle = angle
@@ -141,8 +141,15 @@ class Circle:
     
 class Line:
     def __init__(self, lineDot1, lineDot2):
-        self.slope = (lineDot1[1]-lineDot2[1])/(lineDot1[0]-lineDot2[0])
-        self.yIntercept = lineDot1[1]-self.slope*lineDot1[0]
+        a = lineDot1[0]-lineDot2[0]
+        if a == 0:
+            self.slope = None
+        else:
+            self.slope = (lineDot1[1]-lineDot2[1])/a
+        if self.slope == None:
+            self.xIntercept = lineDot1[0]
+        else:
+            self.yIntercept = lineDot1[1]-self.slope*lineDot1[0]
         self.dotList = [np.array(lineDot1), np.array(lineDot2)]
 
 class Collision:
@@ -159,10 +166,22 @@ class Collision:
 
     def LineSegmentvsLineSegment(self, line1, line2):
         if line1.slope == line2.slope:
+            print('catch ==')
             return False
-        meet = [(line2.yIntercept-line1.yIntercept)/(line1.slope-line2.slope), line1.slope*(line2.yIntercept-line1.yIntercept)/(line1.slope-line2.slope) +line1.yIntercept]
-        if (line1.dotList[0][0]-meet[0])(line2.dotList[0][0]-meet[0])>0:#두 점 사이에 있으면 x좌표 끼리 뺐을때 하나는 음수, 하나는 양수이기 때문. 딱 꼭짓점이면 0.
-            return False
+        if line1.slope == None:
+            meet = [line1.xIntercept, line2.slope*line1.xIntercept + line2.yIntercept]
+            line1.slope = 999999999#혹시 오류 생길수도 있음...만약 x좌표 2개가 같을 경우, 밑에거 abs부분 계산하기 힘들어져서 대충 큰 정수값 넣은것임.
+        elif line2.slope == None:
+            meet = [line2.xIntercept, line1.slope*line2.xIntercept + line1.yIntercept]
+            line2.slope = 999999999
+        else:
+            meet = [(line2.yIntercept-line1.yIntercept)/(line1.slope-line2.slope), line1.slope*(line2.yIntercept-line1.yIntercept)/(line1.slope-line2.slope) +line1.yIntercept]
+        if abs(line1.slope)<abs(line2.slope):#더 완만한 기울기의 선분 고르기.
+            if(line1.dotList[1][0]-meet[0])*(line1.dotList[0][0]-meet[0])>0:#두 점 사이에 있으면 x좌표 끼리 뺐을때 하나는 음수, 하나는 양수이기 때문. 딱 꼭짓점이면 0.
+                return False
+        else:
+            if(line1.dotList[1][0]-meet[0])*(line1.dotList[0][0]-meet[0])>0:
+                return False
         return True
         
     def getMinkowskiSum(self, polygon1, polygon2):
@@ -177,7 +196,17 @@ class Collision:
             return True
 
     def isDotInPolygon(self, dot1, polygon1):#오른쪽으로 반직선 그어서 교점이 홀수면 내부, 짝수면 외부에 점이 존재한다는 알고리즘 사용.
-        pass
+        dotLine = Line(dot1, (dot1[0]+100000000, dot1[1]))
+        meetCount = 0
+        for i in range(len(polygon1.dotList)):
+            polygonLine = Line(polygon1.dotList[i-1], polygon1.dotList[i])
+            print('polyLine: ', polygonLine.dotList)
+            if self.LineSegmentvsLineSegment(dotLine, polygonLine):
+                meetCount += 1
+        print('meetcount = ', meetCount)
+        if meetCount%2 == 1:
+            return True
+        return False
 
 
 if __name__ == "__main__":
@@ -187,11 +216,14 @@ if __name__ == "__main__":
     line1 = Line((0,0), (1,2))
     line2 = Line((3,4), (5, 10))
     c = Collision()
-    print(c.LineSegmentvsLineSegment(line1, line2))
-    a = RotateableAABB((3,5),(4,8),0)
+    print("lineseg vs lineseg: ", c.LineSegmentvsLineSegment(line1, line2))
+    a = RotateableAABB((3,5),(5,8),0)
+    print("dot in poly?: ", c.isDotInPolygon((4,6),a))
+    '''
     a.rotate(80)
     print(a.dotList)
     for i in range(100):
         a.moveX(10,1)
         print(a.dotList)
         time.sleep(0.1)
+    '''
