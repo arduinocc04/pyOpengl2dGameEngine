@@ -2,8 +2,6 @@ import numpy as np
 import math
 import sys
 
-
-
 class AABB:
     def __init__(self, minCoordinate, maxCoordinate, mass):
         if minCoordinate[0]>maxCoordinate[0] or minCoordinate[1]>maxCoordinate[1]:
@@ -112,9 +110,9 @@ class RightTriangle:
         return 0
 
     def isDotUnderHypotenuse(self, dot1):
-        x2MinusX1 = self.rightX-self.leftX
-        y2MinusY1 = self.rightY-self.leftY
-        if (y2MinusY1/x2MinusX1)*(dot1[0]-self.leftX) + self.leftY >dot1[1]:
+        x2MinusX1 = self.rightDot[0]-self.leftDot[0]
+        y2MinusY1 = self.rightDot[1]-self.leftDot[1]
+        if (y2MinusY1/x2MinusX1)*(dot1[0]-self.leftDot[0]) + self.leftDot[1] >dot1[1]:
             return True
         return False
 
@@ -203,7 +201,7 @@ class Circle:
     def __init__(self, position, radius):
         self.centerDot = np.array(position)
         self.radius = radius
-        self.AABBForCollision = AABB( (self.centerX-radius, self.centerY-radius), (self.centerX+radius, self.centerY+radius) ,0)
+        self.AABBForCollision = AABB( (self.centerDot[0]-radius, self.centerDot[1]-radius), (self.centerDot[0]+radius, self.centerDot[1]+radius) ,0)
 
     def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
         global FPS,SCREEN_SIZE
@@ -229,9 +227,6 @@ class Collision:
         b = lineDot1[1]-lineDot2[1]
         return abs(a*dot1[1] - b*dot1[0] + lineDot2[0]*b - lineDot2[1]*a)/(math.sqrt(a**2 + b**2))#점과 직선사이 공식.
 
-    def LinevsLine(self, line1, line2):#일차방정식으로 넣기.
-        pass
-
     def AABBvsAABB(self, AABB1, AABB2):
         if AABB1.minX>AABB2.maxX or AABB2.minX>AABB1.maxX:
             return False
@@ -239,10 +234,12 @@ class Collision:
             return False
         else:
             return True
+
     def CirclevsCircle(self, Circle1, Circle2):
         if self.getDotvsDotDistance((Circle1.centerX, Circle1.centerY), (Circle2.centerX, Circle2.centerY)) < Circle1.radius + Circle2.radius:
             return True
         return False
+
     def AABBvsCircle(self, AABB1, Circle1):
         if AABB1.maxY<Circle1.centerY-Circle1.radius or AABB1.minY > Circle1.centerY+Circle1.radius:
             return False
@@ -250,6 +247,7 @@ class Collision:
             return False
         else:
             return True
+
     def AABBvsRightTriangle(self, AABB1, RightTriangle1):
         if self.AABBvsAABB(AABB1, RightTriangle1.AABBForCollision):
             if AABB1.minX<= RightTriangle1.leftX and AABB1.maxX>= RightTriangle1.rightX:
@@ -261,6 +259,7 @@ class Collision:
                 if RightTriangle1.isDotUnderHypotenuse((AABB1.minX, AABB1.minY)):
                     return True
         return False
+
     def CirclevsRightTriangle(self, Circle1, RightTriangle1):
         if self.AABBvsAABB(Circle1.AABBForCollision, RightTriangle1.AABBForCollision):
             if self.AABBvsCircle(RightTriangle1.AABBForCollision, Circle1):
@@ -270,6 +269,7 @@ class Collision:
                     if self.getLinevsDotDistance((RightTriangle1.leftX, RightTriangle1.leftY), (RightTriangle1.rightX, RightTriangle1.rightY), (Circle1.centerX, Circle1.centerY)) < Circle1.radius:
                         return True
         return False
+        
     def AABBvsTriangle(self, AABB1, Triangle1):
         if self.AABBvsAABB(AABB1, Triangle1.AABBForCollision):
             if AABB1.minX<= Triangle1.leftX and AABB1.maxX>= Triangle1.rightX:
