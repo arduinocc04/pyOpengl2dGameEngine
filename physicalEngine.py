@@ -303,13 +303,15 @@ if __name__ == "__main__":
     polygon1 = Polygon([(4,7), (3,4), (7,1), (14,4), (11,8), (6,9)])
     circle1 = Circle((13,8),4)
     circle2 = Circle((18,7), 2)
+    aabb2 = AABB((1,3), (19,4), 0)
+    aabb3 = AABB((2,3), (4,8), 0)
     print('circle1vscircle2: ', c.CirclevsCircle(circle1, circle2))
     print("aabb1vspolygon1:", c.PolyvsPoly(aabb1, polygon1))
     print('poly1vscircle1:', c.PolyvsCircle(polygon1, circle1))
     boolList = []
     startTime = time.time()
     for i in range(100000):
-        boolList.append(c.PolyvsPoly(aabb1, a))
+        boolList.append(c.AABBvsAABB(aabb2, aabb3))
     print('걸린시간: ', time.time()-startTime)
     '''
     a.rotate(80)
