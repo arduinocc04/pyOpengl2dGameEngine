@@ -151,9 +151,9 @@ class Circle:
             self.moveX(acceleration,1)
         if self.centerDot[0] > SCREEN_SIZE[0]-10:
             self.moveX(acceleration,-1)
-        return 0
+
 class Polygon:
-    def __init__(self, pointList):
+    def __init__(self, pointList, angle=0):
         self.dotList = pointList
 
         xList = []
@@ -162,7 +162,58 @@ class Polygon:
             xList.append(dot[0])
             yList.append(dot[1])
 
+        self.angle = angle
+        if angle:
+            self.rotate(angle) 
+
         self.AABBForCollision = AABB((min(xList), min(yList)), (max(xList), max(yList)), 0)
+
+    def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
+        global FPS,SCREEN_SIZE
+        speed = direction*(acceleration)
+        expression = np.array([speed, 0])
+        for i in range(len(self.dotList)):
+            self.dotList[i] = expression + self.dotList[i]
+        self.centeroidDot = expression + self.centeroidDot
+        
+        xList = []
+        for dot in self.dotList:
+            xList.append(dot[0])
+        minX = min(xList)
+        maxX = max(xList)
+
+        if minX < 10:
+            self.moveX(acceleration,1)
+        if maxX > SCREEN_SIZE[0]-10:
+            self.moveX(acceleration,-1)
+
+    def rotate(self, angle):
+        self.angle += angle
+        if angle == 90:
+            expression = np.array([[0, -1], [1, 0]])
+        elif angle == 180:
+            expression = np.array([[-1, 0], [0, -2]])
+        elif angle == 270:
+            expression = np.array([[0, 1], [-1, 0]])
+        else:
+            angle = math.radians(angle)
+            expression = np.array([[math.cos(angle), -math.sin(angle)],[math.sin(angle), math.cos(angle)]])
+
+        for i in range(len(self.dotList)):
+            self.dotList[i] = np.dot(expression, (self.dotList[i]-self.centeroidDot).T) + self.centeroidDot
+
+        xList = []
+        yList = []
+        for dot in self.dotList:
+            xList.append(dot[0])
+            yList.append(dot[1])
+
+        minX = min(xList)
+        minY = min(yList)
+        maxX = max(xList)
+        maxY = max(yList)
+        self.AABBForCollision = AABB((minX, minY), (maxX, maxY), 0)
+        return angle
     
 class Line:
     def __init__(self, lineDot1, lineDot2):
