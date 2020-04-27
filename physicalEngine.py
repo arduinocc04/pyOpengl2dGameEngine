@@ -29,7 +29,6 @@ class RotateableAABB:
 
         self.centeroidDot = np.array([(dot1[0] +dot3[0])/2, (dot1[1] + dot3[1])/2])
         self.dotList = [dot1, dot2, dot3, dot4]
-        print('RAABB:', self.dotList)
 
         minX = min(self.dotList[0][0], self.dotList[1][0], self.dotList[2][0], self.dotList[3][0])
         minY = min(self.dotList[0][1], self.dotList[1][1], self.dotList[2][1], self.dotList[3][1])
@@ -153,6 +152,17 @@ class Circle:
         if self.centerDot[0] > SCREEN_SIZE[0]-10:
             self.moveX(acceleration,-1)
         return 0
+class Polygon:
+    def __init__(self, pointList):
+        self.dotList = pointList
+
+        xList = []
+        yList = []
+        for dot in pointList:
+            xList.append(dot[0])
+            yList.append(dot[1])
+
+        self.AABBForCollision = AABB((min(xList), min(yList)), (max(xList), max(yList)), 0)
     
 class Line:
     def __init__(self, lineDot1, lineDot2):
@@ -184,7 +194,7 @@ class Collision:
             return False
         if line1.slope == None:
             meet = [line1.xIntercept, line2.slope*line1.xIntercept + line2.yIntercept]
-            line1.slope = 99999999999
+            line1.slope = 99999999999#x축에 수직인 그래프의 기울기.(대충 큰값 넣은것.)
         elif line2.slope == None:
             meet = [line2.xIntercept, line1.slope*line2.xIntercept + line1.yIntercept]
             line2.slope = 99999999999
@@ -220,9 +230,7 @@ class Collision:
         for i in range(len(polygon1.dotList)):
             polygonLine = Line(polygon1.dotList[i-1], polygon1.dotList[i])
             if self.LineSegmentvsLineSegment(dotLine, polygonLine):
-                print(f'{dot1}: meet line:/{polygonLine.dotList}')
                 meetCount += 1
-        print(f'{dot1}: meet {meetCount} time.')
         if meetCount%2 == 1:
             return True
 
@@ -234,7 +242,7 @@ class Collision:
 	    return True
 
     def GrahamScan(self,P):
-	    P.sort(key=lambda dot: dot[0])			# Sort the set of points
+	    P.sort(key=lambda dot: dot[1])			# Sort the set of points
 	    L_upper = [P[0], P[1]]		# Initialize upper part
 	    # Compute the upper part of the hull
 	    for i in range(2,len(P)):
@@ -263,13 +271,9 @@ class Collision:
 
         points = deepcopy(polygon1.dotList)
         for i in polygon2PointsInPolygon1AABBIndex:
-            print(f"appended{i}: ", polygon2.dotList[i])
             points.append(polygon2.dotList[i])
 
-        print('points: ', points)
         points = self.GrahamScan(points)
-        print('convex_hull: ', points)
-        print(f'polygon1 dotList: {polygon1.dotList}')
         if len(points) != len(polygon1.dotList): 
             return False
         return True
@@ -286,8 +290,8 @@ if __name__ == "__main__":
     print("dot in poly?: ", c.isDotInPolygon((4,6),a))
 
     aabb1 = RotateableAABB((2,8), (2,6), (6,6), (6,8), 0)
-    aabb2 = RotateableAABB((4,9), (4,7), (8,7), (8,9), 0)
-    print("aabb1vsaabb2:", c.PolyvsPoly(aabb1, aabb2))
+    polygon1 = Polygon([(4,7), (3,4), (7,1), (14,4), (11,8), (6,9)])
+    print("aabb1vspolygon1:", c.PolyvsPoly(aabb1, polygon1))
     '''
     a.rotate(80)
     print(a.dotList)
