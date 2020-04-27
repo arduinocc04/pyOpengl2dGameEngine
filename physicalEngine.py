@@ -20,121 +20,6 @@ class AABB:
         self.maxY = max(dot1[1], dot2[1], dot3[1], dot4[1])
         self.minY = min(dot1[1], dot2[1], dot3[1], dot4[1])
 
-class RotateableAABB:
-    def __init__(self, dot1, dot2, dot3, dot4, mass, angle=0):
-        dot1 = np.array(dot1)
-        dot2 = np.array(dot2)
-        dot3 = np.array(dot3)
-        dot4 = np.array(dot4)
-
-        self.centeroidDot = np.array([(dot1[0] +dot3[0])/2, (dot1[1] + dot3[1])/2])
-        self.dotList = [dot1, dot2, dot3, dot4]
-
-        minX = min(self.dotList[0][0], self.dotList[1][0], self.dotList[2][0], self.dotList[3][0])
-        minY = min(self.dotList[0][1], self.dotList[1][1], self.dotList[2][1], self.dotList[3][1])
-        maxX = max(self.dotList[0][0], self.dotList[1][0], self.dotList[2][0], self.dotList[3][0])
-        maxY = max(self.dotList[0][1], self.dotList[1][1], self.dotList[2][1], self.dotList[3][1])
-        self.AABBForCollision = AABB((minX, minY), (maxX, maxY), 0)
-
-        self.angle = angle
-        if angle:
-            self.rotate(angle)
-
-    def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
-        global FPS,SCREEN_SIZE
-        speed = direction*(acceleration)
-        expression = np.array([speed, 0])
-        for i in range(4):
-            self.dotList[i] = expression + self.dotList[i]
-        self.centeroidDot = expression + self.centeroidDot
-
-        minX = min(self.dotList[0][0], self.dotList[1][0], self.dotList[2][0], self.dotList[3][0])
-        maxX = max(self.dotList[0][0], self.dotList[1][0], self.dotList[2][0], self.dotList[3][0])
-
-        if minX < 10:
-            self.moveX(acceleration,1)
-        if maxX > SCREEN_SIZE[0]-10:
-            self.moveX(acceleration,-1)
-        return 0
-
-    def rotate(self, angle):
-        self.angle += angle
-        if angle == 90:
-            expression = np.array([[0, -1], [1, 0]])
-        elif angle == 180:
-            expression = np.array([[-1, 0], [0, -2]])
-        elif angle == 270:
-            expression = np.array([[0, 1], [-1, 0]])
-        else:
-            angle = math.radians(angle)
-            expression = np.array([[math.cos(angle), -math.sin(angle)], [math.sin(angle), math.cos(angle)]])
-        
-        for i in range(4):
-            self.dotList[i] = np.dot(expression, (self.dotList[i]-self.centeroidDot).T) + self.centeroidDot
-
-        minX = min(self.dotList[0][0], self.dotList[1][0], self.dotList[2][0], self.dotList[3][0])
-        minY = min(self.dotList[0][1], self.dotList[1][1], self.dotList[2][1], self.dotList[3][1])
-        maxX = max(self.dotList[0][0], self.dotList[1][0], self.dotList[2][0], self.dotList[3][0])
-        maxY = max(self.dotList[0][1], self.dotList[1][1], self.dotList[2][1], self.dotList[3][1])
-        self.AABBForCollision = AABB((minX, minY), (maxX, maxY), 0)
-        return angle
-        
-
-class Triangle:
-    def __init__(self, triangleDot1, triangleDot2, triangleDot3, angle=0):
-        leftDot = np.array(triangleDot1)
-        middleDot = np.array(triangleDot2)
-        rightDot = np.array(triangleDot3)
-        self.dotList = [leftDot, rightDot, rightDot]
-        self.centeroidDot = np.array([(leftDot[0] + rightDot[0] + middleDot[0])/3, (leftDot[1] + rightDot[1] + middleDot[1])/3])
-        self.angle = angle
-        if angle:
-            self.rotate(angle) 
-
-        self.AABBForCollision = AABB((triangleDot1[0], triangleDot3[1]), (triangleDot3[0], triangleDot2[1]), 0)
-
-    def moveX(self, acceleration, direction):#right->1, left->-1 등속 직선 운동.
-        global FPS,SCREEN_SIZE
-        speed = direction*(acceleration)
-        expression = np.array([speed, 0])
-        for i in range(3):
-            self.dotList[i] = expression + self.dotList[i]
-        self.centeroidDot = expression + self.centeroidDot
-
-        minX = min(self.dotList[0][0], self.dotList[1][0], self.dotList[2][0])
-        maxX = max(self.dotList[0][0], self.dotList[1][0], self.dotList[2][0])
-
-        if minX < 10:
-            self.moveX(acceleration,1)
-        if maxX > SCREEN_SIZE[0]-10:
-            self.moveX(acceleration,-1)
-        return 0
-
-    def rotate(self, angle):
-        self.angle += angle
-        if angle == 90:
-            expression = np.array([[0, -1], [1, 0]])
-        elif angle == 180:
-            expression = np.array([[-1, 0], [0, -2]])
-        elif angle == 270:
-            expression = np.array([[0, 1], [-1, 0]])
-        else:
-            angle = math.radians(angle)
-            expression = np.array([[math.cos(angle), -math.sin(angle)],[math.sin(angle), math.cos(angle)]])
-
-        for i in range(3):
-            self.dotList[i] = np.dot(expression, (self.dotList[i]-self.centeroidDot).T) + self.centeroidDot
-
-        minX = min(self.dotList[0][0], self.dotList[1][0], self.dotList[2][0])
-        minY = min(self.dotList[0][1], self.dotList[1][1], self.dotList[2][1])
-        maxX = max(self.dotList[0][0], self.dotList[1][0], self.dotList[2][0])
-        maxY = max(self.dotList[0][1], self.dotList[1][1], self.dotList[2][1])
-        self.AABBForCollision = AABB((minX, minY), (maxX, maxY), 0)
-        return angle
-
-
-
-
 class Circle:
     def __init__(self, centerPosition, radius):
         self.centerDot = np.array(centerPosition)
@@ -347,17 +232,13 @@ if __name__ == "__main__":
     line2 = Line((3,4), (5, 10))
     c = Collision()
     print("lineseg vs lineseg: ", c.LineSegmentvsLineSegment(line1, line2))
-    a = RotateableAABB((3,5), (5,5), (5,8), (3,8),0)
-    print("dot in poly?: ", c.isDotInPolygon((4,6),a))
 
-    aabb1 = RotateableAABB((2,8), (2,6), (6,6), (6,8), 0)
     polygon1 = Polygon([(4,7), (3,4), (7,1), (14,4), (11,8), (6,9)])
     circle1 = Circle((13,8),4)
     circle2 = Circle((18,7), 2)
     aabb2 = AABB((1,3), (19,4), 0)
     aabb3 = AABB((2,3), (4,8), 0)
     print('circle1vscircle2: ', c.CirclevsCircle(circle1, circle2))
-    print("aabb1vspolygon1:", c.PolyvsPoly(aabb1, polygon1))
     print('poly1vscircle1:', c.PolyvsCircle(polygon1, circle1))
     boolList = []
     startTime = time.time()
