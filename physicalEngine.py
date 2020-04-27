@@ -277,6 +277,16 @@ class Collision:
         if len(points) != len(polygon1.dotList): 
             return False
         return True
+    def CirclevsCircle(self, circle1, circle2):
+        centerDotDistanceSquared = self.getDotvsDotDistanceSquared(circle1.centerDot, circle2.centerDot)
+        if (circle1.radius + circle2.radius)**2> centerDotDistanceSquared:
+            return True
+        return False
+    def PolyvsCircle(self, polygon1, circle1):
+        for i in range(len(polygon1.dotList)):
+            if self.getLinevsDotDistance(polygon1.dotList[i-1], polygon1.dotList[i], circle1.centerDot) < circle1.radius:
+                return True
+        return False
 
 if __name__ == "__main__":
     import time
@@ -291,7 +301,16 @@ if __name__ == "__main__":
 
     aabb1 = RotateableAABB((2,8), (2,6), (6,6), (6,8), 0)
     polygon1 = Polygon([(4,7), (3,4), (7,1), (14,4), (11,8), (6,9)])
+    circle1 = Circle((13,8),4)
+    circle2 = Circle((18,7), 2)
+    print('circle1vscircle2: ', c.CirclevsCircle(circle1, circle2))
     print("aabb1vspolygon1:", c.PolyvsPoly(aabb1, polygon1))
+    print('poly1vscircle1:', c.PolyvsCircle(polygon1, circle1))
+    boolList = []
+    startTime = time.time()
+    for i in range(100000):
+        boolList.append(c.PolyvsPoly(aabb1, a))
+    print('걸린시간: ', time.time()-startTime)
     '''
     a.rotate(80)
     print(a.dotList)
