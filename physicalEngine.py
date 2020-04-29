@@ -21,39 +21,36 @@ class AABB:
         self.minY = min(dot1[1], dot2[1], dot3[1], dot4[1])
 
 class Circle:
-    def __init__(self, centerPosition, radius):
+    def __init__(self, centerPosition, radius, mass):
         self.centerDot = np.array(centerPosition)
         self.radius = radius
+        self.mass = mass
+        self.speedX = 0
+        self.speedY = 0
         self.AABBForCollision = AABB( (self.centerDot[0]-radius, self.centerDot[1]-radius), (self.centerDot[0]+radius, self.centerDot[1]+radius) ,0)
 
-    def moveXBySpeed(self, speed):#right->1, left->-1 등속 직선 운동.
+    def moveXByAccel(self, acceleration, friction):
         global FPS,SCREEN_SIZE
-        expression = np.array([speed, 0])
-        self.centerDot = expression + self.centerDot
-        self.centeroidDot = expression + self.centeroidDot
-        if self.centerDot[0] < 10:
-            self.moveXBySpeed(abs(speed))
-        if self.centerDot[0] > SCREEN_SIZE[0]-10:
-            self.moveXBySpeed(-abs(speed))
-    
-    def moveYBySpeed(self, speed):
-        global FPS, SCREEN_SIZE
-        expression = np.array([0, speed])
-        self.centerDot = expression + self.centerDot
-        self.centeroidDot = expression + self.centeroidDot
-        if self.centerDot[1] < 10:
-            self.moveYBySpeed(abs(speed))
-        if self.centerDot[1] > SCREEN_SIZE[1]-10:
-            self.moveYBySpeed(-abs(speed))
+        self.speedX += acceleration 
+        self.speedX *= friction
+        
+        expression = np.array([self.speedX, 0])
+        self.centerDot += expression
 
-    def moveXByAccel(self, acceleration):
-        pass
-    def moveYByAccel(self, acceleration):
-        pass
+    def moveYByAccel(self, acceleration, airResistance):
+        global FPS,SCREEN_SIZE
+        self.speedY += acceleration
+        self.speedY *= airResistance
+
+        expression = np.array([0, self.speedY])
+        self.centerDot += expression
 
 class Polygon:
-    def __init__(self, pointList, angle=0):
+    def __init__(self, pointList, mass, angle=0):
         self.dotList = pointList
+        self.speedX = 0
+        self.speedY = 0
+        self.mass = mass
 
         xList = []
         yList = []
@@ -66,41 +63,27 @@ class Polygon:
             self.rotate(angle) 
 
         self.AABBForCollision = AABB((min(xList), min(yList)), (max(xList), max(yList)), 0)
+        self.centeroidDot = ((min(xList)+max(xList))/2, (min(yList)+max(yList))/2)
 
-    def moveXBySpeed(self,speed):#right->1, left->-1 등속 직선 운동.
+    def moveXByAccel(self, acceleration, friction):
         global FPS,SCREEN_SIZE
-        expression = np.array([speed, 0])
+        self.speedX += acceleration 
+        self.speedX *= friction
+
+        expression = np.array([self.speedX, 0])
         for i in range(len(self.dotList)):
-            self.dotList[i] = expression + self.dotList[i]
-        self.centeroidDot = expression + self.centeroidDot
-        
-        xList = []
-        for dot in self.dotList:
-            xList.append(dot[0])
-        minX = min(xList)
-        maxX = max(xList)
+            self.dotList[i] += expression
+        self.centeroidDot += expression
 
-        if minX < 10:
-            self.moveXBySpeed(abs(speed))
-        if maxX > SCREEN_SIZE[0]-10:
-            self.moveXBySpeed(-abs(speed))
+    def moveYByAccel(self, acceleration, airResistance):
+        global FPS,SCREEN_SIZE
+        self.speedY += acceleration 
+        self.speedY *= airResistance
 
-    def moveYBySpeed(self, speed):
-        global FPS, SCREEN_SIZE
-        expression = np.array([0, speed])
-        self.centerDot = expression + self.centerDot
-        self.centeroidDot = expression + self.centeroidDot
-
-        yList = []
-        for dot in self.dotList:
-            yList.append(dot[1])
-        minY = min(yList)
-        maxY = max(yList)
-
-        if maxY < 10:
-            self.moveXBySpeed(abs(speed))
-        if minY > SCREEN_SIZE[0]-10:
-            self.moveXBySpeed(-abs(speed))
+        expression = np.array([0, self.speedY])
+        for i in range(len(self.dotList)):
+            self.dotList[i] += expression
+        self.centeroidDot += expression
 
     def rotate(self, angle):
         self.angle += angle
@@ -227,6 +210,9 @@ class Collision:
 	    return L
 
     def PolyvsPoly(self, polygon1, polygon2, reversed= False):
+        assert type(polygon1) is Polygon
+        assert type(polygon2) is Polygon
+
         if not(reversed):#거꾸로 먼저하고, 이미 겹쳐있다고 판단하면, 그냥 true return.
             if self.PolyvsPoly(polygon2, polygon1, reversed=True):
                 return True
@@ -245,10 +231,15 @@ class Collision:
         return True
 
     def CirclevsCircle(self, circle1, circle2):
+        assert type(circle1) is Circle
+        assert type(circle2) is Circle
+
         centerDotDistanceSquared = self.getDotvsDotDistanceSquared(circle1.centerDot, circle2.centerDot)
         return ((circle1.radius + circle2.radius)**2-centerDotDistanceSquared)>0
 
     def PolyvsCircle(self, polygon1, circle1):
+        assert type(polygon1) is Polygon
+        assert type(circle1) is Circle
         for i in range(len(polygon1.dotList)):
             if self.getLinevsDotDistance(polygon1.dotList[i-1], polygon1.dotList[i], circle1.centerDot) < circle1.radius:
                 return True
@@ -263,11 +254,12 @@ if __name__ == "__main__":
     c = Collision()
     print("lineseg vs lineseg: ", c.LineSegmentvsLineSegment(line1, line2))
 
-    polygon1 = Polygon([(4,7), (3,4), (7,1), (14,4), (11,8), (6,9)])
-    circle1 = Circle((13,8),4)
-    circle2 = Circle((18,7), 2)
+    polygon1 = Polygon([(4,7), (3,4), (7,1), (14,4), (11,8), (6,9)], mass=0)
+    circle1 = Circle((13,8),4, 0)
+    circle2 = Circle((18,7), 2, 0)
     aabb2 = AABB((1,3), (19,4), 0)
     aabb3 = AABB((2,3), (4,8), 0)
+    print("aabb3's type: ", type(aabb3))
     print('circle1vscircle2: ', c.CirclevsCircle(circle1, circle2))
     print('poly1vscircle1:', c.PolyvsCircle(polygon1, circle1))
     boolList = []
