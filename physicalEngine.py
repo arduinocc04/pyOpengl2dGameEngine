@@ -4,7 +4,7 @@ import sys
 from copy import deepcopy
 
 class AABB:
-    def __init__(self, minCoordinate, maxCoordinate, mass):
+    def __init__(self, minCoordinate, maxCoordinate):
         if minCoordinate[0]>maxCoordinate[0] or minCoordinate[1]>maxCoordinate[1]:
             raise Exception("Min값이 Max값보다 큽니다.")
 
@@ -21,13 +21,14 @@ class AABB:
         self.minY = min(dot1[1], dot2[1], dot3[1], dot4[1])
 
 class Circle:
-    def __init__(self, centerPosition, radius, mass):
+    def __init__(self, centerPosition, radius, mass, angle=0):
         self.centerDot = np.array(centerPosition)
         self.radius = radius
         self.mass = mass
         self.speedX = 0
         self.speedY = 0
-        self.AABBForCollision = AABB( (self.centerDot[0]-radius, self.centerDot[1]-radius), (self.centerDot[0]+radius, self.centerDot[1]+radius) ,0)
+        self.angle = angle
+        self.AABBForCollision = AABB( (self.centerDot[0]-radius, self.centerDot[1]-radius), (self.centerDot[0]+radius, self.centerDot[1]+radius))
 
     def moveXByAccel(self, acceleration, friction):
         global FPS,SCREEN_SIZE
@@ -62,7 +63,7 @@ class Polygon:
         if angle:
             self.rotate(angle) 
 
-        self.AABBForCollision = AABB((min(xList), min(yList)), (max(xList), max(yList)), 0)
+        self.AABBForCollision = AABB((min(xList), min(yList)), (max(xList), max(yList)))
         self.centeroidDot = ((min(xList)+max(xList))/2, (min(yList)+max(yList))/2)
 
     def moveXByAccel(self, acceleration, friction):
@@ -110,7 +111,7 @@ class Polygon:
         minY = min(yList)
         maxX = max(xList)
         maxY = max(yList)
-        self.AABBForCollision = AABB((minX, minY), (maxX, maxY), 0)
+        self.AABBForCollision = AABB((minX, minY), (maxX, maxY))
         return angle
     
 class Line:
@@ -126,6 +127,44 @@ class Line:
             self.yIntercept = lineDot1[1]-self.slope*lineDot1[0]
         self.dotList = [np.array(lineDot1), np.array(lineDot2)]
 
+class Group:
+    def __init__(self, objList, mass, angle=0):
+        self.objList = objList
+        for obj in objList:
+            assert type(obj) is Circle or Polygon
+
+        self.angle = angle
+        self.mass = mass
+
+        xList = []
+        for obj in objList:
+            xList.append(obj.AABBForCollision.minX)
+        minX = min(xList)
+        xList = []
+        for obj in objList:
+            xList.append(obj.AABBForCollision.maxX)
+        maxX = max(xList)
+        yList = []
+        for obj in objList:
+            yList.append(obj.AABBForCollision.minY)
+        minY = min(yList)
+        yList = []
+        for obj in objList:
+            yList.append(obj.AABBForCollision.maxY)
+        maxY = max(yList)
+
+        self.AABBForCollision = AABB((minX, minY), (maxX, maxY))
+
+    def rotate(self, angle):
+        for obj in self.objList:
+            obj.rotate(angle)
+    def moveXByAccel(self, acceleration, friction):
+        for obj in self.objList:
+            obj.moveXByAccel(acceleration, friction)
+    def moveYByAccel(self, acceleration, airResistance):
+        for obj in self.objList:
+            obj.moveYByAccel(acceleration, airResistance)
+        
 class Collision:
     def __init__(self):
         pass
@@ -133,12 +172,17 @@ class Collision:
     def getDotvsDotDistanceSquared(self,dot1, dot2):
         return (dot1[0]-dot2[0])**2 + (dot1[1]-dot2[1])**2
 
-    def getLinevsDotDistance(self, lineDot1, lineDot2, dot1):
-        a = lineDot1[0]-lineDot2[0]
-        b = lineDot1[1]-lineDot2[1]
-        return abs(a*dot1[1] - b*dot1[0] + lineDot2[0]*b - lineDot2[1]*a)/(math.sqrt(a**2 + b**2))#점과 직선사이 공식.
+    def getLinevsDotDistance(self, line1, dot1):
+        assert type(line1) is Line
+
+        a = line1.dotList[0][0]-line1.dotList[1][0]
+        b = line1.dotList[0][1]-line1.dotList[1][1]
+        return abs(a*dot1[1] - b*dot1[0] + line1.dotList[1][0]*b - line1.dotList[1][1]*a)/(math.sqrt(a**2 + b**2))#점과 직선사이 공식.
 
     def LineSegmentvsLineSegment(self, line1, line2):
+        assert type(line1) is Line
+        assert type(line2) is Line
+
         if line1.slope == line2.slope:
             return False
         if line1.slope == None:
@@ -165,6 +209,9 @@ class Collision:
         return polyIndexList
 
     def AABBvsAABB(self, AABB1, AABB2):
+        assert type(AABB1) is AABB
+        assert type(AABB2) is AABB
+
         if AABB1.minX>AABB2.maxX or AABB2.minX>AABB1.maxX:
             return False
         elif AABB1.minY>AABB2.maxY or AABB2.minY>AABB1.maxY:
@@ -241,9 +288,39 @@ class Collision:
         assert type(polygon1) is Polygon
         assert type(circle1) is Circle
         for i in range(len(polygon1.dotList)):
-            if self.getLinevsDotDistance(polygon1.dotList[i-1], polygon1.dotList[i], circle1.centerDot) < circle1.radius:
+            polygonLine = Line(polygon1.dotList[i-1], polygon1.dotList[i])
+            if self.getLinevsDotDistance(polygonLine, circle1.centerDot) < circle1.radius:
                 return True
         return False
+
+    def GroupvsObj(self, group1, obj1):
+        assert type(group1) is Group
+        assert type(obj1) is Circle or Polygon
+
+        aabbCollideObjectList = []
+        for obj in group1.objList:
+            if self.AABBvsAABB(obj.AABBForCollision, obj1.AABBForCollision):
+                aabbCollideObjectList.append(obj)
+
+        if type(obj1) is Circle:
+            for obj in aabbCollideObjectList:
+                if type(obj) is Circle:
+                    if self.CirclevsCircle(obj, obj1):
+                        return True
+                else:
+                    if self.PolyvsCircle(obj, obj1):
+                        return True
+        else:
+            for obj in aabbCollideObjectList:
+                if type(obj) is Circle:
+                    if self.PolyvsCircle(obj1, obj):
+                        return True
+                else:
+                    if self.PolyvsPoly(obj1, obj):
+                        return True
+        return False
+
+
 
 if __name__ == "__main__":
     import time
@@ -255,16 +332,18 @@ if __name__ == "__main__":
     print("lineseg vs lineseg: ", c.LineSegmentvsLineSegment(line1, line2))
 
     polygon1 = Polygon([(4,7), (3,4), (7,1), (14,4), (11,8), (6,9)], mass=0)
+    polygon2 = Polygon([(4,7), (5,7), (4,9), (5,9)], 0)
     circle1 = Circle((13,8),4, 0)
     circle2 = Circle((18,7), 2, 0)
-    aabb2 = AABB((1,3), (19,4), 0)
-    aabb3 = AABB((2,3), (4,8), 0)
+    aabb2 = AABB((1,3), (19,4))
+    aabb3 = AABB((2,3), (4,8))
     print("aabb3's type: ", type(aabb3))
     print('circle1vscircle2: ', c.CirclevsCircle(circle1, circle2))
     print('poly1vscircle1:', c.PolyvsCircle(polygon1, circle1))
     boolList = []
     startTime = time.time()
-    for i in range(100000):
+    for i in range(100):
+        polygon1.moveXByAccel(1, 0.7)
         boolList.append(c.AABBvsAABB(aabb2, aabb3))
     print('걸린시간: ', time.time()-startTime)
     '''
