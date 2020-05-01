@@ -1,104 +1,75 @@
 import time
-import multiprocessing
-from multiprocessing import Process, Manager
-from functools import partial
-from threading import Thread
-from physicalEngine import *
+import physicalEngine
 
-def control(arg, count, id):
-    a = Collision()
-    m = 0
-    for i in range(arg, count):
-        if a.AABBvsTriangle(AABB1=AABB((i,i),(2*i+1,3*i+1), 0), Triangle1=Triangle((10, 10), (30,100),(50,10))):
-            m+= 1
-    print(f"===============id: {id}, 겹치는 사각형,삼각형 개수: {m}=============")
-    
-#TEST`
+def collision(p, moveableObj, possibleStaticObjList):
+    startTime = time.time()
+    for staticObj in possibleStaticObjList:
+        if type(moveableObj) is physicalEngine.Group:
+            p.GroupvsObj(moveableObj, staticObj)
+        else:
+            if type(staticObj) is physicalEngine.Circle:
+                if type(moveableObj) is physicalEngine.Circle:
+                    p.CirclevsCircle(staticObj, moveableObj)
+                else:
+                    p.PolyvsCircle(moveableObj, staticObj)
+            else:
+                if type(moveableObj) is physicalEngine.Circle:
+                    p.PolyvsCircle(staticObj, moveableObj)
+                else:
+                    p.PolyvsPoly(moveableObj, staticObj)
+    print('collision Finished, ',len(possibleStaticObjList), 'takeTime: ', time.time()-startTime)
+
 if __name__ == "__main__":
-
-    multiprocessing.freeze_support()
-
-    FPS = 60 
+    import time,threading,multiprocessing
+    FPS = 60
     SCREEN_SIZE = (1920, 1080)
+    line1 = physicalEngine.Line((0,0), (1,2))
+    line2 = physicalEngine.Line((3,4), (5, 10))
+    p = physicalEngine.Collision()
+    print("lineseg vs lineseg: ", p.LineSegmentvsLineSegment(line1, line2))
 
-    a = AABB((4,40), (50,400), 1)
-    b = AABB((2,3),(5,6), 1)
-    c = Collision()
-    print(c.AABBvsAABB(a,b))
-    d = Circle((10,500), 40)
-    e = Circle((2,4), 8)
-    g = Triangle((2,3),(10,6), (15,3))
-    print(c.CirclevsCircle(d,e))
-    print(c.AABBvsCircle(a,d))
-    print(c.AABBvsCircle(a,e))
-    print(c.AABBvsCircle(b,d))
-    print(c.AABBvsCircle(b,e))
-    print(c.AABBvsTriangle(b,g))
-    print("======init Finished=========")
-    COUNT = 0
-    m = 0
-    startTime = time.time()
-    for i in range(COUNT):
-        if c.AABBvsTriangle(AABB1=AABB((i,i),(2*i+1,3*i+1), 0), Triangle1=Triangle((10, 10), (30,100),(50,10))):
-            m += 1
-    print(f"===========사각형,삼각형 충돌처리 걸린시간: {time.time()-startTime}=========")
-    print(f"===========겹치는 사각형, 삼각형 개수: {m}=========================")
+    polygon1 = physicalEngine.Polygon([(4,7), (3,4), (7,1), (14,4), (11,8), (6,9)], mass=0)
+    polygon2 = physicalEngine.Polygon([(4,7), (5,7), (4,9), (5,9)], 0)
+    circle1 = physicalEngine.Circle((13,8),4, 0)
+    circle2 = physicalEngine.Circle((18,7), 2, 0)
+    square = physicalEngine.Polygon([(2,8), (2,6), (6,6), (6,8)],0)
+    group = physicalEngine.Group((polygon1, polygon2, circle1, circle2),0)
+    print('polygonvspoly: ', p.PolyvsPoly(polygon1, polygon2))
+    staticObjList = []
 
-    p1 = Process(target=control, args=(0, COUNT//2,1))
-    p2 = Process(target=control, args=(COUNT//2, COUNT, 2))
-    print("===multiprocessingInit finished====")
-    startTime = time.time()
-    results = []
+    #for i in range(100000):
+       # staticObjList.append(physicalEngine.Polygon([(0,0), (0,i), (i,i), (i,0)], 0))
+
+    for _ in range(100000):
+        staticObjList.append(square)
+
+    moveableObjList = [polygon1]
     
-    p1.start()
-    print("=====p1 started======")
-    p2.start()
-    p1.join()
-    print("=====p1 joined======")
-    p2.join()
-    print(f"===========사각형 충돌처리-multi 걸린시간: {time.time()-startTime}=========")
 
+    for moveableObj in moveableObjList:
+        possibleStaticObjList = []
+        aabbStartTime = time.time()
+        for staticObj in staticObjList:
+            if p.AABBvsAABB(moveableObj.AABBForCollision, staticObj.AABBForCollision):
+                possibleStaticObjList.append(staticObj)
+        print(f'aabb collision finished. it takes: {time.time()-aabbStartTime}sec')
+        print(f'len of possibleStaticObjList is {len(possibleStaticObjList)}')
+        a = len(possibleStaticObjList)
+        pr1 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleStaticObjList[:a//4]))
+        pr2 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleStaticObjList[a//4:a//2]))
+        #pr3 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleStaticObjList[a//2:(a//4)*3]))
+        #pr4 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleStaticObjList[(a//4)*3:]))
+        pr1 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleStaticObjList[:a//2]))
+        pr2 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleStaticObjList[a//2:]))
 
-    '''
-    results = []
-    m = 0
-    startTime = time.time()
-    for i in range(COUNT):
-        if c.AABBvsAABB(AABB((i,i), (2*i+1, 5*i+1), 0), AABB((10, 100), (500, 600), 0)):
-            m+= 1
-    print(f"===========사각형 충돌처리-일반 걸린시간: {time.time()-startTime}=========")
-    print(f"===========겹치는 사각형 개수: {m}=========================")
+        startTime = time.time()
+        pr1.start()
+        pr2.start()
+        #pr3.start()
+        #pr4.start()
 
-    startTime = time.time()
-    th1 = Thread(target=control, args=(0, COUNT//2,1))
-    th2 = Thread(target=control, args=(COUNT//2, COUNT, 2))
-    th1.start()
-    th2.start()
-    th1.join()
-    th2.join()
-    procs = []
-
-    for i in range(4):
-        proc = Process(target=control, args=(COUNT,1))
-        procs.append(proc)
-        proc.start()
-
-    for proc in procs:
-        proc.join()
-
-    #pool = multiprocessing.Pool(processes=4)
-    #argues = [(0, COUNT//4, 1), (COUNT//4, COUNT//2, 2), (COUNT//2, COUNT*3//2, 3), (COUNT*3//2, COUNT, 4)]
-    #pool.map(control, argues)
-    
-    b = []
-    startTime = time.time()
-    for i in range(COUNT):
-        b.append(c.CirclevsCircle(Circle1=Circle((i,i), 5), Circle2=Circle((10, 100), 600)))
-    print(f"===========원 충돌처리-multi 걸린시간: {time.time()-startTime}=========")
-    m = 0
-    for i in range(len(b)):
-        if b[i]:
-            m += 1
-    print(f"===========겹치는 원 개수: {m}=========================")
-    '''
-    
+        pr1.join()
+        pr2.join()
+        #pr3.join()
+        #pr4.join()
+        print(f'========================collision finished with multiprocessing. it takes {time.time()-startTime}===============')
