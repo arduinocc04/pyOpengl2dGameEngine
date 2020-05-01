@@ -1,23 +1,11 @@
 import time
 import physicalEngine
 
-def collision(p, moveableObj, possibleStaticObjList):
+def collision(p, Character, possibleObjList):
     startTime = time.time()
-    for staticObj in possibleStaticObjList:
-        if type(moveableObj) is physicalEngine.Group:
-            p.GroupvsObj(moveableObj, staticObj)
-        else:
-            if type(staticObj) is physicalEngine.Circle:
-                if type(moveableObj) is physicalEngine.Circle:
-                    p.CirclevsCircle(staticObj, moveableObj)
-                else:
-                    p.PolyvsCircle(moveableObj, staticObj)
-            else:
-                if type(moveableObj) is physicalEngine.Circle:
-                    p.PolyvsCircle(staticObj, moveableObj)
-                else:
-                    p.PolyvsPoly(moveableObj, staticObj)
-    print('collision Finished, ',len(possibleStaticObjList), 'takeTime: ', time.time()-startTime)
+    for possibleObj in possibleObjList:
+        p.ActorvsActor(Character, possibleObj)
+    print('collision Finished, ',len(possibleObjList), 'takeTime: ', time.time()-startTime)
 
 if __name__ == "__main__":
     import time,threading,multiprocessing
@@ -33,7 +21,7 @@ if __name__ == "__main__":
     circle1 = physicalEngine.Circle((13,8),4, 0)
     circle2 = physicalEngine.Circle((18,7), 2, 0)
     square = physicalEngine.Polygon([(2,8), (2,6), (6,6), (6,8)],0)
-    group = physicalEngine.Group((polygon1, polygon2, circle1, circle2),0)
+    actor = physicalEngine.Actor((polygon1, polygon2, circle1, circle2), 0)
     print('polygonvspoly: ', p.PolyvsPoly(polygon1, polygon2))
     staticObjList = []
 
@@ -41,26 +29,26 @@ if __name__ == "__main__":
        # staticObjList.append(physicalEngine.Polygon([(0,0), (0,i), (i,i), (i,0)], 0))
 
     for _ in range(100000):
-        staticObjList.append(square)
+        staticObjList.append(physicalEngine.Actor((square,), 0))
 
-    moveableObjList = [polygon1]
+    moveableObjList = [physicalEngine.Actor((polygon1,), 0)]
     
 
     for moveableObj in moveableObjList:
-        possibleStaticObjList = []
+        possibleObjList = []
         aabbStartTime = time.time()
         for staticObj in staticObjList:
             if p.AABBvsAABB(moveableObj.AABBForCollision, staticObj.AABBForCollision):
-                possibleStaticObjList.append(staticObj)
+                possibleObjList.append(staticObj)
         print(f'aabb collision finished. it takes: {time.time()-aabbStartTime}sec')
-        print(f'len of possibleStaticObjList is {len(possibleStaticObjList)}')
-        a = len(possibleStaticObjList)
-        pr1 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleStaticObjList[:a//4]))
-        pr2 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleStaticObjList[a//4:a//2]))
-        #pr3 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleStaticObjList[a//2:(a//4)*3]))
-        #pr4 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleStaticObjList[(a//4)*3:]))
-        pr1 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleStaticObjList[:a//2]))
-        pr2 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleStaticObjList[a//2:]))
+        print(f'len of possibleObjList is {len(possibleObjList)}')
+        a = len(possibleObjList)
+        pr1 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleObjList[:a//4]))
+        pr2 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleObjList[a//4:a//2]))
+        #pr3 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleObjList[a//2:(a//4)*3]))
+        #pr4 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleObjList[(a//4)*3:]))
+        pr1 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleObjList[:a//2]))
+        pr2 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleObjList[a//2:]))
 
         startTime = time.time()
         pr1.start()

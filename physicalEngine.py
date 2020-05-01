@@ -31,7 +31,6 @@ class Circle:
         self.AABBForCollision = AABB( (self.centerDot[0]-radius, self.centerDot[1]-radius), (self.centerDot[0]+radius, self.centerDot[1]+radius))
 
     def moveXByAccel(self, acceleration, friction):
-        global FPS,SCREEN_SIZE
         self.speedX += acceleration 
         self.speedX *= friction
         
@@ -39,12 +38,14 @@ class Circle:
         self.centerDot += expression
 
     def moveYByAccel(self, acceleration, airResistance):
-        global FPS,SCREEN_SIZE
         self.speedY += acceleration
         self.speedY *= airResistance
 
         expression = np.array([0, self.speedY])
         self.centerDot += expression
+
+    def rotate(self, angle):
+        self.angle += angle
 
 class Polygon:
     def __init__(self, pointList, mass, angle=0):
@@ -67,7 +68,6 @@ class Polygon:
         self.centeroidDot = ((min(xList)+max(xList))/2, (min(yList)+max(yList))/2)
 
     def moveXByAccel(self, acceleration, friction):
-        global FPS,SCREEN_SIZE
         self.speedX += acceleration 
         self.speedX *= friction
 
@@ -77,7 +77,6 @@ class Polygon:
         self.centeroidDot += expression
 
     def moveYByAccel(self, acceleration, airResistance):
-        global FPS,SCREEN_SIZE
         self.speedY += acceleration 
         self.speedY *= airResistance
 
@@ -127,43 +126,60 @@ class Line:
             self.yIntercept = lineDot1[1]-self.slope*lineDot1[0]
         self.dotList = [np.array(lineDot1), np.array(lineDot2)]
 
-class Group:
-    def __init__(self, objList, mass, angle=0):
-        self.objList = objList
-        for obj in objList:
+class Actor:
+    def __init__(self, componentList, mass, angle=0):
+        self.componentList = componentList
+        for obj in componentList:
             assert type(obj) is Circle or Polygon
 
         self.angle = angle
         self.mass = mass
 
+        self.makeAABBForCollision()
+
+    def makeAABBForCollision(self):
         xList = []
-        for obj in objList:
+        for obj in self.componentList:
             xList.append(obj.AABBForCollision.minX)
         minX = min(xList)
         xList = []
-        for obj in objList:
+        for obj in self.componentList:
             xList.append(obj.AABBForCollision.maxX)
         maxX = max(xList)
         yList = []
-        for obj in objList:
+        for obj in self.componentList:
             yList.append(obj.AABBForCollision.minY)
         minY = min(yList)
         yList = []
-        for obj in objList:
+        for obj in self.componentList:
             yList.append(obj.AABBForCollision.maxY)
         maxY = max(yList)
 
         self.AABBForCollision = AABB((minX, minY), (maxX, maxY))
 
-    def rotate(self, angle):
-        for obj in self.objList:
-            obj.rotate(angle)
+
+class Character(Actor):
+    def __init__(self, componentList, mass, angle=0):
+        super().__init__(componentList, mass, angle)
+        
     def moveXByAccel(self, acceleration, friction):
-        for obj in self.objList:
-            obj.moveXByAccel(acceleration, friction)
+        for component in self.componentList:
+            component.moveXByAccel(acceleration, friction)
+        self.makeAABBForCollision()
+
     def moveYByAccel(self, acceleration, airResistance):
-        for obj in self.objList:
-            obj.moveYByAccel(acceleration, airResistance)
+        for component in self.componentList:
+            component.moveYByAccel(acceleration, airResistance)
+        self.makeAABBForCollision()
+
+    def rotate(self, angle):
+        for component in self.componentList:
+            component.rotate(angle)
+        self.makeAABBForCollision()
+
+class Player(Character):
+    def __init__(self, componentList, mass, angle=0):
+        super().__init__(componentList, mass, angle)
         
 class Collision:
     def __init__(self):
@@ -194,7 +210,7 @@ class Collision:
         else:
             meet = [(line2.yIntercept-line1.yIntercept)/(line1.slope-line2.slope), line1.slope*(line2.yIntercept-line1.yIntercept)/(line1.slope-line2.slope) +line1.yIntercept]
         if abs(line1.slope)<abs(line2.slope):#더 완만한 기울기의 선분 고르기.
-            if(line1.dotList[1][0]-meet[0])*(line1.dotList[0][0]-meet[0])>0 or (line2.dotList[0][1]-meet[1])*(line2.dotList[1][1]-meet[1])>0:#두 점 사이에 있으면 x좌표 끼리 뺐을때 하나는 음수, 하나는 양수이기 때문. 딱 꼭짓점이면 0. y좌표도 똑같이.
+            if(line1.dotList[1][0]-meet[0])*(line1.dotList[0][0]-meet[0])>0 or (line2.dotList[0][1]-meet[1])*(line2.dotList[1][1]-meet[1])>0:
                 return False
         else:
             if(line2.dotList[1][0]-meet[0])*(line2.dotList[0][0]-meet[0])>0 or (line1.dotList[0][1]-meet[1])*(line1.dotList[1][1]-meet[1])>0:
@@ -220,7 +236,7 @@ class Collision:
             return True
 
     def isDotInPolygon(self, dot1, polygon1):#오른쪽으로 반직선 그어서 교점이 홀수면 내부, 짝수면 외부에 점이 존재한다는 알고리즘 사용.
-        dotLine = Line(dot1, (dot1[0]+100000000, dot1[1]))
+        dotLine = Line(dot1, (dot1[0]+10000, dot1[1]))
         meetCount = 0
 
         for i in range(len(polygon1.dotList)):
@@ -287,70 +303,36 @@ class Collision:
     def PolyvsCircle(self, polygon1, circle1):
         assert type(polygon1) is Polygon
         assert type(circle1) is Circle
+
         for i in range(len(polygon1.dotList)):
             polygonLine = Line(polygon1.dotList[i-1], polygon1.dotList[i])
             if self.getLinevsDotDistance(polygonLine, circle1.centerDot) < circle1.radius:
                 return True
         return False
 
-    def GroupvsObj(self, group1, obj1):
-        assert type(group1) is Group
-        assert type(obj1) is Circle or Polygon
+    def ActorvsActor(self, actor1, actor2):
+        assert type(actor1) is Actor or Character or Player
+        assert type(actor2) is Actor or Character or Player
 
-        aabbCollideObjectList = []
-        for obj in group1.objList:
-            if self.AABBvsAABB(obj.AABBForCollision, obj1.AABBForCollision):
-                aabbCollideObjectList.append(obj)
-
-        if type(obj1) is Circle:
-            for obj in aabbCollideObjectList:
-                if type(obj) is Circle:
-                    if self.CirclevsCircle(obj, obj1):
-                        return True
+        for actor1Component in actor1.componentList:
+            for actor2Component in actor2.componentList:
+                if type(actor1Component) is Circle:
+                    if type(actor2Component) is Circle:
+                        if self.CirclevsCircle(actor1Component, actor2Component):
+                            return True
+                    else:
+                        if self.PolyvsCircle(actor2Component, actor1Component):
+                            return True
                 else:
-                    if self.PolyvsCircle(obj, obj1):
-                        return True
-        else:
-            for obj in aabbCollideObjectList:
-                if type(obj) is Circle:
-                    if self.PolyvsCircle(obj1, obj):
-                        return True
-                else:
-                    if self.PolyvsPoly(obj1, obj):
-                        return True
+                    if type(actor2Component) is Circle:
+                        if self.PolyvsCircle(actor1Component, actor2Component):
+                            return True
+                    else:
+                        if self.PolyvsPoly(actor1Component, actor2Component):
+                            return True
         return False
 
-
-
-if __name__ == "__main__":
-    import time
-    FPS = 60
-    SCREEN_SIZE = (1920, 1080)
-    line1 = Line((0,0), (1,2))
-    line2 = Line((3,4), (5, 10))
-    c = Collision()
-    print("lineseg vs lineseg: ", c.LineSegmentvsLineSegment(line1, line2))
-
-    polygon1 = Polygon([(4,7), (3,4), (7,1), (14,4), (11,8), (6,9)], mass=0)
-    polygon2 = Polygon([(4,7), (5,7), (4,9), (5,9)], 0)
-    circle1 = Circle((13,8),4, 0)
-    circle2 = Circle((18,7), 2, 0)
-    aabb2 = AABB((1,3), (19,4))
-    aabb3 = AABB((2,3), (4,8))
-    print("aabb3's type: ", type(aabb3))
-    print('circle1vscircle2: ', c.CirclevsCircle(circle1, circle2))
-    print('poly1vscircle1:', c.PolyvsCircle(polygon1, circle1))
-    boolList = []
-    startTime = time.time()
-    for i in range(100):
-        polygon1.moveXByAccel(1, 0.7)
-        boolList.append(c.AABBvsAABB(aabb2, aabb3))
-    print('걸린시간: ', time.time()-startTime)
-    '''
-    a.rotate(80)
-    print(a.dotList)
-    for i in range(100):
-        a.moveX(10,1)
-        print(a.dotList)
-        time.sleep(0.1)
-    '''
+class Physic:
+    def __init__(self):
+        pass
+    

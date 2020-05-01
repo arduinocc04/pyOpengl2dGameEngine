@@ -6,7 +6,7 @@ from math import sin, cos
 if not glfw.init():
     raise Exception("glfw can not be initialized!")
 
-SCREEN_SIZE = (1280,720)
+SCREEN_SIZE = (1920, 1080)
 
 
 window = glfw.create_window(SCREEN_SIZE[0], SCREEN_SIZE[1], "My OpenGL window", None, None)
