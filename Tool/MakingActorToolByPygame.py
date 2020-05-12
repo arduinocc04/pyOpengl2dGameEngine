@@ -3,39 +3,34 @@ import pygame
 import numpy as np
 
 pygame.init()
-
 SCREEN_SIZE = (1920, 1080)
 screen = pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN)
-
-clock = pygame.time.Clock()
-FPS = 60
-
-lineDistance = 20
+basicLineDistance = 20
 done = False
 shapeList = []
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+RED = (255, 0, 0)
 FONT = 'malgungothic'
 font = pygame.font.SysFont(FONT, 20)
 helpText = ['ctrl+P:Making Polygon', 'ctrl+C:Making Circle', 'ctrl+q:Finish draw shape', 'ctrl+F:Finish and extract.',
             'ctrl+d:Delete Shape', 'ctrl+M:move Screen', 'ctrl+r:rotateLastModifedShape.', 'arrowTo rotate(+-1), ctrl+arrow to rotate(+-10)', 
             'Set mode and click Coordinate.', 'esc or alt+F4: Close']
 
-def renderMultiLineText(screen, coordinate, textList, fontSize, color, backgroundColor, antialias=True):
+def renderTextsGroup(coordinate, textList, fontSize, color, backgroundColor, antialias=True):
     maxTextLen = 0
     for text in textList:
         if len(text) > maxTextLen:
             maxTextLen = len(text)
 
-    pygame.draw.rect(screen, backgroundColor, [coordinate[0], coordinate[1], round(maxTextLen*fontSize*0.5),
-                                               (len(textList) + 1)*fontSize])  # background
+    pygame.draw.rect(screen, backgroundColor, [coordinate[0], coordinate[1], round(maxTextLen*fontSize*0.5),(len(textList) + 1)*fontSize])#draw background
     for i in range(len(textList)):
         text = font.render(textList[i], antialias, color)
         screen.blit(text, (coordinate[0], coordinate[1] + i * fontSize))
 
 
-def returnClickedCoordinate(SCREEN_SIZE, screenCoordinate, lineDistance):
+def returnClickedCoordinate():
     mouseX, mouseY = pygame.mouse.get_pos()
     screenDot = (screenCoordinate[0] // lineDistance, screenCoordinate[1] // lineDistance)
     dotX = round(mouseX / lineDistance) + screenDot[0]
@@ -43,34 +38,35 @@ def returnClickedCoordinate(SCREEN_SIZE, screenCoordinate, lineDistance):
     return (dotX, dotY)
 
 
-def dotToScreenDot(dot, lineDistance, SCREEN_SIZE, screenCoordinate):
+def dotToScreenDot(dot):
     screenDot = (screenCoordinate[0] // lineDistance, screenCoordinate[1] // lineDistance)
     return int(round((dot[0] - screenDot[0]) * lineDistance)), int(round(SCREEN_SIZE[1] - (dot[1] - screenDot[1]) * lineDistance))
 
 
-def drawDot(screen, coordinate, color, font, lineDistance, antialias=True):
-    pygame.draw.circle(screen, BLACK, coordinate, 3)
-    text = font.render(f'({coordinate[0]/lineDistance}, {coordinate[1]/lineDistance})', antialias, color)
+def drawDotAndCoordinate(coordinate, color, antialias=True):
+    text = coordiFont.render(f'({coordinate[0]/lineDistance + screenCoordinate[0]//lineDistance}, {(SCREEN_SIZE[1]-coordinate[1]+screenCoordinate[1])/lineDistance})', antialias, color)
     screen.blit(text, (coordinate[0]+2, coordinate[1]+2))
+    pygame.draw.circle(screen, BLACK, coordinate, 3)
+    
 
 class Poly:
     def __init__(self):
         self.dotList = []
         self.angle = 0
 
-
     def appendNewDot(self, coordinate):
-        if coordinate in self.dotList:
-            shapeList.append(nowShape)
-            return True
         self.dotList.append(coordinate)
+    
+    def isDotInDotList(self, dot):
+        if dot in self.dotList:
+            return True
         return False
 
     def extract(self):
         dotList = ''
         for dot in self.dotList:
             dotList += str(dot) + ' '
-        dotList[:-1]
+        dotList = dotList[:-1]
         return f'physicalEngine.Polygon({dotList}, {self.angle})'
     
     def rotate(self, angle):
@@ -123,35 +119,44 @@ screenCoordinate = [0, 0]
 moving = False
 
 coordiFont = pygame.font.SysFont(FONT, 10)
+zoom = 1
+lineDistance = basicLineDistance
+
 while not done:
-    clock.tick(FPS)
+    #clock.tick(FPS)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             done = True
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            dot = returnClickedCoordinate(SCREEN_SIZE, screenCoordinate, lineDistance)
+            dot = returnClickedCoordinate()
 
             if mode == 'MakingPoly':
-                if nowShape.appendNewDot(dot):
+                if nowShape.isDotInDotList(dot):
                     mode = 'QUIT'
+                    shapeList.append(nowShape)
+                else:
+                    nowShape.appendNewDot(dot)
                         
             elif mode == 'MakingCircle':
                 if nowShape.centerDot == -1:
                     nowShape.setCenterDot(dot)
                 elif nowShape.radius == -1:
                     nowShape.calcRadius(dot)
-                    mode = 'QUIT'
                     shapeList.append(nowShape)
+                    mode = 'QUIT'
+
             elif mode == 'Move':
                 prevCoordinate = pygame.mouse.get_pos()
                 moving = True
+
             elif mode == 'Delete':
                 for i in range(len(shapeList)):
                     if type(shapeList[i]) is Poly:
-                        if dot in shapeList[i].dotList:
-                            del shapeList[i]
-                            break
+                        for shapeDot in shapeList[i].dotList:
+                            if abs(dot[0]-shapeDot[0])<=0.5 and abs(dot[1]-shapeDot[1])<=0.5:
+                                del shapeList[i]
+                                break
                     else:
                         if dot == shapeList[i].centerDot:
                             del shapeList[i]
@@ -176,22 +181,32 @@ while not done:
                 ctrlPressed = True
             if event.key == pygame.K_LALT:
                 altPressed = True
-            if event.key == pygame.K_RIGHT:
-                try:
+            if event.key == pygame.K_RIGHT and mode == 'Rotate':
+                if type(shapeList[-1]) is Poly:
                     if ctrlPressed:
                         shapeList[-1].rotate(-10)
                     else:
                         shapeList[-1].rotate(-1)
-                except AttributeError:
+                else:
                     pass
-            if event.key == pygame.K_LEFT:
-                try:
+            if event.key == pygame.K_LEFT and mode == 'Rotate':
+                if type(shapeList[-1]) is Poly:
                     if ctrlPressed:
                         shapeList[-1].rotate(10)
                     else:
                         shapeList[-1].rotate(1)
-                except AttributeError:
+                else:
                     pass
+            if event.key == pygame.K_UP:
+                zoom += 0.5
+                lineDistance = round(zoom*basicLineDistance)
+            if event.key == pygame.K_DOWN:
+                temporaryZoomLev = zoom-0.5
+                if temporaryZoomLev<=0:
+                    screen.blit(font.render('Cannnot Zoom!', True, (255, 0, 0)), (SCREEN_SIZE[0]//2, SCREEN_SIZE[1]//2))
+                else:
+                    zoom = temporaryZoomLev
+                lineDistance = round(zoom*basicLineDistance)
             if ctrlPressed:
                 if event.key == pygame.K_p:
                     mode = 'MakingPoly'
@@ -241,30 +256,30 @@ while not done:
         for i in range(len(nowShape.dotList)):
             if len(nowShape.dotList) > 1:
                 pygame.draw.line(screen, BLACK,
-                                 dotToScreenDot(nowShape.dotList[i-1], lineDistance, SCREEN_SIZE, screenCoordinate),
-                                 dotToScreenDot(nowShape.dotList[i], lineDistance, SCREEN_SIZE, screenCoordinate), 2)
-            drawDot(screen, dotToScreenDot(nowShape.dotList[i], lineDistance, SCREEN_SIZE, screenCoordinate), BLACK, coordiFont, lineDistance)
+                                 dotToScreenDot(nowShape.dotList[i-1]),
+                                 dotToScreenDot(nowShape.dotList[i]), 2)
+            drawDotAndCoordinate(dotToScreenDot(nowShape.dotList[i]), BLACK)
     elif mode == 'MakingCircle':
         if nowShape.centerDot != -1:
-            drawDot(screen, dotToScreenDot(nowShape.centerDot, lineDistance, SCREEN_SIZE, screenCoordinate), BLACK, coordiFont, lineDistance)
+            drawDotAndCoordinate(dotToScreenDot(nowShape.centerDot), BLACK)
             if nowShape.radius != -1:
                 pygame.draw.circle(screen, BLACK,
-                                   dotToScreenDot(nowShape.centerDot, lineDistance, SCREEN_SIZE, screenCoordinate),
+                                   dotToScreenDot(nowShape.centerDot),
                                    round(nowShape.radius * lineDistance), 1)
     for shape in shapeList:
         if type(shape) is Poly:
             for i in range(len(shape.dotList)):
                 pygame.draw.line(screen, BLACK,
-                                 dotToScreenDot(shape.dotList[i-1], lineDistance, SCREEN_SIZE, screenCoordinate),
-                                 dotToScreenDot(shape.dotList[i], lineDistance, SCREEN_SIZE, screenCoordinate), 2)
-                drawDot(screen, dotToScreenDot(shape.dotList[i], lineDistance, SCREEN_SIZE, screenCoordinate), BLACK, coordiFont, lineDistance)
+                                 dotToScreenDot(shape.dotList[i-1]),
+                                 dotToScreenDot(shape.dotList[i]), 2)
+                drawDotAndCoordinate(dotToScreenDot(shape.dotList[i]), BLACK)
         else:
-            drawDot(screen, dotToScreenDot(shape.centerDot, lineDistance, SCREEN_SIZE, screenCoordinate), BLACK, coordiFont, lineDistance)
+            drawDotAndCoordinate(dotToScreenDot(shape.centerDot), BLACK)
             pygame.draw.circle(screen, BLACK,
-                               dotToScreenDot(shape.centerDot, lineDistance, SCREEN_SIZE, screenCoordinate),
+                               dotToScreenDot(shape.centerDot),
                                round(shape.radius*lineDistance), 1)
 
-    renderMultiLineText(screen, (0, 0), helpText, 20, BLACK, WHITE)
+    renderTextsGroup((0, 0), helpText, 20, BLACK, WHITE)
     screen.blit(font.render(f'MODE: {mode}', True, BLACK, WHITE), (SCREEN_SIZE[0] - 200, 0))#show mode
 
     pygame.display.flip()
