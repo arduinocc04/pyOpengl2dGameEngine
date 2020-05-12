@@ -5,8 +5,10 @@ import physicalEngine
 import pygame
 
 class RenderSystem:
-    def __init__(self, target, image):
+    '''show image on actor's coordinate'''
+    def __init__(self, target):
         self.target = target
+    def setImage(self, image):
         self.image = pygame.image.load(image).convert_alpha()
     def setImgSize(self, width, height):
         self.image = pygame.transform.scale(self.image, (width, height))
@@ -15,26 +17,41 @@ class RenderSystem:
         #self.target.coordinate 에 render
 
 class TalkSystem:
+    '''script.'''
     def __init__(self):
         pass
 
 class HealthSystem:
+    '''health system. it can damage, kill other, and heal self'''
     def __init__(self, maxHealth, nowHealth):
+        '''if nowHealth>maxHealth -> nowHealth= maxHealth'''
         self.maxHealth = maxHealth
-        self.nowHealth = nowHealth
+        if nowHealth > maxHealth:
+            self.nowHealth = maxHealth
+        else:
+            self.nowHealth = nowHealth
+        self.died = False
     
-    def damage(self, damage):
-        self.nowHealth -= damage
-        if self.nowHealth <1:
-            self.kill()
+    def damage(self, damage, target):
+        if not target.healthSystem.died:
+            target.healthSystem.nowHealth -= damage
+            if target.healthSystem.nowHealth <1:
+                self.kill(target)
     
     def heal(self, healAmount):
         self.nowHealth += healAmount
         if self.nowHealth > self.maxHealth:
             self.nowHealth = self.maxHealth
-        
+    
+    def revive(self, healAmount):
+        self.died = False
+        if healAmount>self.maxHealth:
+            healAmount = self.maxHealth
+        self.nowHealth = healAmount
+
     def kill(self, target):#target will call died() method
         self.nowHealth = -1
+        self.died = True
         try:
             target.died()
         except AttributeError:
@@ -42,16 +59,19 @@ class HealthSystem:
 
 
 class MoveSystem:
+    '''move system. move target coordinate and collider'''
     def __init__(self, parent):
         '''parent must be self(actor's self)'''
         self.speedX = 0
         self.speedY = 0
         self.target = parent
         self.angle = 0
+        self.friction = 1
+        self.airResistance = 1
     
     def makingAABB(self):
         if type(self.target.collider) is physicalEngine.Circle:
-            self.target.collider.AABB = physicalEngine.AABB((self.target.collider.dotList[0][0]-self.target.collider.radius, self.target.collider.dotList[0][1]-self.target.collider.radius), (self.target.collider.dotList[0][0]+self.target.collider.radius, self.target.collider.dotList[0][1]+self.target.collider.radius))
+            self.target.collider.AABB = physicalEngine.AABB((self.target.collider.centerDot[0]-self.target.collider.radius, self.target.collider.centerDot[1]-self.target.collider.radius), (self.target.collider.centerDot[0]+self.target.collider.radius, self.target.collider.centerDot[1]+self.target.collider.radius))
         else:
             xList = []
             yList = []
@@ -61,32 +81,14 @@ class MoveSystem:
 
             self.target.collider.AABB = physicalEngine.AABB((min(xList), min(yList)), (max(xList), max(yList)))
 
-    def moveXByAccel(self, acceleration, friction):
-        '''
-        0<friction<=1
-        '''
+    def moveXByAccel(self, acceleration):
         self.speedX += acceleration
-        self.speedX *= friction
-        expression = np.array([self.speedX, 0])
-        self.target.coordinate += expression
-        for i in range(len(self.target.collider.dotList)):
-            self.target.collider.dotList[i] += expression
-        self.makingAABB()
-    
-    def moveYByAccel(self, acceleration, airResistance):
-        '''
-        0<airResistance<=1
-        '''
+        
+    def moveYByAccel(self, acceleration):
         self.speedY += acceleration
-        self.speedY *= airResistance
-        expression = np.array([0, self.speedY])
-        self.target.coordinate += expression
-        try:
-            for i in range(len(self.target.collider.dotList)):
-                self.target.collider.dotList[i] += expression
-            self.makingAABB()
-        except AttributeError:
-            pass
+        
+    def jump(self, height):
+        self.speedY += height
     
     def rotate(self, angle):
         self.angle += angle
@@ -108,12 +110,40 @@ class MoveSystem:
             self.makingAABB()
         except AttributeError:
             pass
+    
+    def idle(self):
+        if abs(self.speedX)<0.0001:
+            self.speedX = 0
+        if abs(self.speedY)<0.0001:
+            self.speedY = 0
+        self.speedX *= self.friction
+        self.speedY *= self.airResistance
 
+        expression = np.array([self.speedX, self.speedY])
+        self.target.coordinate += expression
+        if self.target.collider:
+            if type(self.target.collider) is physicalEngine.Polygon:
+                for i in range(len(self.target.collider.dotList)):
+                    self.target.collider.dotList[i] += expression
+            else:
+                self.target.collider.centerDot += expression
+            self.makingAABB()
+            
+        if self.target.trigger:
+            if type(self.target.trigger) is physicalEngine.Polygon:
+                for i in range(len(self.target.trigger.component.dotList)):
+                    self.target.trigger.component.dotList[i] += expression
+            else:
+                self.target.trigger.component.centerDot += expression
+            self.target.trigger.makingAABB()
+        
 class RigidPhysicalSystem:
+    '''simulation physics'''
     def __init__(self):
         pass
 
 class EventSystem:
+    '''may be use for custom event'''
     def __init__(self):
         pass
 
@@ -124,20 +154,22 @@ class EventSystem:
         pass
 
 class SoundSystem:
+    '''sound system. it can use for bgm or sound effect'''
     def __init__(self, fileName):
+        pygame.mixer.init(44100,-16, 2, 2048)
         self.loopCount = 0
         self.diminishVolumePercentPer100px = 0
         self.volume = 1
         self.clip = pygame.mixer.Sound(fileName)#should be ogg or wav
 
     def playSound(self, wait):
-        self.clip.play()
+        self.clip.play(wait)
         
     def stopSound(self):
         self.clip.stop()
 
     def setVolumeByDistance(self, distance):
-        self.clip.set_volume(1-distance*self.diminishVolumePercentPer100px)
+        self.clip.set_volume(1-math.log10(distance)*self.diminishVolumePercentPer100px)
 
     def loopSound(self, loopTime):
         self.loopCount += 1
@@ -146,8 +178,23 @@ class SoundSystem:
             return True
         return False
 
+class AI:
+    '''useful tool'''
+    def __init__(self, parent):
+        '''generally parent is self'''
+        self.parent = parent
+
+    def chase(self, target, moveSpeed, xDistance):
+        '''0<moveSpeed, 0<friction<=1, target means object which chased by parent'''
+        targetX, targetY = target.coordinate
+        if abs(self.parent.coordinate[0]-targetX) > xDistance:
+            if target.mover.speedX>0:#when target see right
+                self.parent.mover.moveXByAccel(moveSpeed)
+            else:
+                self.parent.mover.moveXByAccel(-moveSpeed)
 
 class Looper:#It helps do loop whitout for, while, time.sleep(). It helps implement function like poision?
+    '''useful tool'''
     def __init__(self, delayTime, loopNum):
         self.delayTime = delayTime
         self.loopNum = loopNum
@@ -161,5 +208,23 @@ class Looper:#It helps do loop whitout for, while, time.sleep(). It helps implem
             function()
             self.loopCount += 1
             self.prevExecutedTime = time.time()
+
+class Trigger:
+    '''use when you need to have two collider.'''
+    def __init__(self, component):
+        self.component = component
+        self.AABB = self.makingAABB()
+    
+    def makingAABB(self):
+        if type(self.component) is physicalEngine.Circle:
+            self.AABB = physicalEngine.AABB((self.component.centerDot[0]-self.component.radius, self.component.centerDot[1]-self.component.radius), (self.component.centerDot[0]+self.component.radius, self.component.centerDot[1]+self.component.radius))
+        else:
+            xList = []
+            yList = []
+            for dot in self.component.dotList:
+                xList.append(dot[0])
+                yList.append(dot[1])
+
+            self.AABB = physicalEngine.AABB((min(xList), min(yList)), (max(xList), max(yList)))
 
     
