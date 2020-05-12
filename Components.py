@@ -123,6 +123,30 @@ class EventSystem:
     def getEvt(self):
         pass
 
+class SoundSystem:
+    def __init__(self, fileName):
+        self.loopCount = 0
+        self.diminishVolumePercentPer100px = 0
+        self.volume = 1
+        self.clip = pygame.mixer.Sound(fileName)#should be ogg or wav
+
+    def playSound(self, wait):
+        self.clip.play()
+        
+    def stopSound(self):
+        self.clip.stop()
+
+    def setVolumeByDistance(self, distance):
+        self.clip.set_volume(1-distance*self.diminishVolumePercentPer100px)
+
+    def loopSound(self, loopTime):
+        self.loopCount += 1
+        if self.loopCount<loopTime or loopTime == -1:
+            self.playSound()
+            return True
+        return False
+
+
 class Looper:#It helps do loop whitout for, while, time.sleep(). It helps implement function like poision?
     def __init__(self, delayTime, loopNum):
         self.delayTime = delayTime
