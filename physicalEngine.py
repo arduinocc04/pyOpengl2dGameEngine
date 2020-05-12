@@ -22,9 +22,9 @@ class AABB:
 
 class Circle:
     def __init__(self, centerPosition, radius):
-        self.dotList = [np.array([float(centerPosition[0]), float(centerPosition[1])])]
+        self.centerDot = np.array([float(centerPosition[0]), float(centerPosition[1])])
         self.radius = radius
-        self.AABB = AABB( (self.dotList[0][0]-radius, self.dotList[0][1]-radius), (self.dotList[0][0]+radius, self.dotList[0][1]+radius))
+        self.AABB = AABB( (self.centerDot[0]-radius, self.centerDot[1]-radius), (self.centerDot[0]+radius, self.centerDot[1]+radius))
 
 class Polygon:
     def __init__(self, pointList, angle=0):
@@ -168,8 +168,8 @@ class Collision:
         assert type(circle1) is Circle
         assert type(circle2) is Circle
 
-        centerDotDistanceSquared = self.getDotvsDotDistanceSquared(circle1.dotList[0], circle2.dotList[0])
-        return ((circle1.radius + circle2.radius)**2-centerDotDistanceSquared)>0
+        centerDotDistanceSquared = self.getDotvsDotDistanceSquared(circle1.centerDot, circle2.centerDot)
+        return ((circle1.radius + circle2.radius)**2>centerDotDistanceSquared)
 
     def PolyvsCircle(self, polygon1, circle1):
         assert type(polygon1) is Polygon
@@ -177,13 +177,11 @@ class Collision:
 
         for i in range(len(polygon1.dotList)):
             polygonLine = Line(polygon1.dotList[i-1], polygon1.dotList[i])
-            if self.getLinevsDotDistance(polygonLine, circle1.dotList[0]) < circle1.radius:
+            if self.getLinevsDotDistance(polygonLine, circle1.centerDot) < circle1.radius:
                 return True
         return False
 
-    def ActorvsActor(self, actor1, actor2):
-        actor1Component = actor1.collider
-        actor2Component = actor2.collider
+    def ActorvsActor(self, actor1Component, actor2Component):
         if type(actor1Component) is Circle:
             if type(actor2Component) is Circle:
                 if self.CirclevsCircle(actor1Component, actor2Component):
