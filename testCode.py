@@ -1,63 +1,94 @@
 import time
 import physicalEngine
+import GameObject
+import Components
+import pygame
 
-def collision(p, Character, possibleObjList):
-    startTime = time.time()
-    for possibleObj in possibleObjList:
-        p.ActorvsActor(Character, possibleObj)
-    print('collision Finished, ',len(possibleObjList), 'takeTime: ', time.time()-startTime)
+class TestActor(GameObject.Actor):
+    def __init__(self, coordinate):
+        super().__init__(coordinate)
+        self.colliderSetting = 'gc'
+        self.collider = physicalEngine.Circle(coordinate, 20)
+
+        self.renderer = Components.RenderSystem(self, 'testSource/player.png')
+        self.renderer.setImgSize(40, 40)
+        
+        self.mover = Components.MoveSystem(self)
+    
+    def collided(self):
+        print("BAAM!")
+        
 
 if __name__ == "__main__":
-    import time,threading,multiprocessing
+    import time
+    import multiprocessing
+    
     FPS = 60
     SCREEN_SIZE = (1920, 1080)
-    line1 = physicalEngine.Line((0,0), (1,2))
-    line2 = physicalEngine.Line((3,4), (5, 10))
-    p = physicalEngine.Collision()
-    print("lineseg vs lineseg: ", p.LineSegmentvsLineSegment(line1, line2))
+    screen = pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN)
+    clock = pygame.time.Clock()
+    done = False
+    BLACK = (0, 0, 0)
+    WHITE = (255, 255, 255)
+    groundObjList = []
+    characterObjList = [TestActor((1,100)), TestActor((100, 100))]
+    keys = [False, False]#leftGoKey, RightGoKey
+    collision = physicalEngine.Collision()
 
-    polygon1 = physicalEngine.Polygon([(4,7), (3,4), (7,1), (14,4), (11,8), (6,9)], mass=0)
-    polygon2 = physicalEngine.Polygon([(4,7), (5,7), (4,9), (5,9)], 0)
-    circle1 = physicalEngine.Circle((13,8),4, 0)
-    circle2 = physicalEngine.Circle((18,7), 2, 0)
-    square = physicalEngine.Polygon([(2,8), (2,6), (6,6), (6,8)],0)
-    actor = physicalEngine.Actor((polygon1, polygon2, circle1, circle2), 0)
-    print('polygonvspoly: ', p.PolyvsPoly(polygon1, polygon2))
-    staticObjList = []
+    while not done:
+        clock.tick(FPS)
+        screen.fill(WHITE)
 
-    #for i in range(100000):
-       # staticObjList.append(physicalEngine.Polygon([(0,0), (0,i), (i,i), (i,0)], 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                done = True
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    done = True
+                if event.key == pygame.K_LEFT:
+                    keys[0] = True
+                if event.key == pygame.K_RIGHT:
+                    keys[1] = True
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_LEFT:
+                    keys[0] = False
+                if event.key == pygame.K_RIGHT:
+                    keys[1] = False
 
-    for _ in range(100000):
-        staticObjList.append(physicalEngine.Actor((square,), 0))
+        for obj in characterObjList:#1Frame 마다 update()호출.
+            obj.update()
 
-    moveableObjList = [physicalEngine.Actor((polygon1,), 0)]
-    
+        for obj in characterObjList:#충돌처리, 충돌하면 collided()호출.
+            if obj.collider:
+                if 'g' in obj.colliderSetting:
+                    for ground in groundObjList:
+                        if not collision.AABBvsAABB(obj.collider.AABB, ground.collider.AABB):
+                            continue
+                        if collision.ActorvsActor(obj, ground):
+                            obj.collided()
 
-    for moveableObj in moveableObjList:
-        possibleObjList = []
-        aabbStartTime = time.time()
-        for staticObj in staticObjList:
-            if p.AABBvsAABB(moveableObj.AABBForCollision, staticObj.AABBForCollision):
-                possibleObjList.append(staticObj)
-        print(f'aabb collision finished. it takes: {time.time()-aabbStartTime}sec')
-        print(f'len of possibleObjList is {len(possibleObjList)}')
-        a = len(possibleObjList)
-        pr1 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleObjList[:a//4]))
-        pr2 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleObjList[a//4:a//2]))
-        #pr3 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleObjList[a//2:(a//4)*3]))
-        #pr4 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleObjList[(a//4)*3:]))
-        pr1 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleObjList[:a//2]))
-        pr2 = multiprocessing.Process(target=collision, args=(p,moveableObj,possibleObjList[a//2:]))
+                if 'c' in obj.colliderSetting:
+                    for otherObj in characterObjList:
+                        if otherObj != obj:
+                            if not collision.AABBvsAABB(obj.collider.AABB, otherObj.collider.AABB):
+                                continue
+                            if collision.ActorvsActor(obj, otherObj):
+                                obj.collided()
+                                otherObj.collided()
 
-        startTime = time.time()
-        pr1.start()
-        pr2.start()
-        #pr3.start()
-        #pr4.start()
+        if keys[0]:# player movement
+            characterObjList[0].mover.moveXByAccel(-0.1, 0.9)
+        if keys[1]:
+            characterObjList[0].mover.moveXByAccel(0.1, 0.9)
+        for character in characterObjList:#render character.(test)
+           # pygame.draw.circle(screen, BLACK, (int(character.coordinate[0]), int(character.coordinate[1])), character.collider.radius, 1)
+           character.renderer.render(screen)
+        
+        for groundObj in groundObjList:
+            pass
+        for character in characterObjList:
+            pass
+        
+        pygame.display.flip()
 
-        pr1.join()
-        pr2.join()
-        #pr3.join()
-        #pr4.join()
-        print(f'========================collision finished with multiprocessing. it takes {time.time()-startTime}===============')
+pygame.quit()
