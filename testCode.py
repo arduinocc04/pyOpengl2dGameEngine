@@ -1,5 +1,5 @@
 import time
-import physicalEngine
+import PhysicalEngine
 import GameObject
 import Components
 import pygame
@@ -14,7 +14,7 @@ class TestActor(GameObject.Actor):
     def __init__(self, coordinate):
         super().__init__(coordinate)
         self.colliderSetting = 'gc'
-        self.collider = physicalEngine.Circle(coordinate, 20)
+        self.collider = PhysicalEngine.Circle(coordinate, 20)
 
         self.renderer = Components.RenderSystem(self)
         self.renderer.setImage('testSource/player.png')
@@ -29,7 +29,7 @@ class TestActor(GameObject.Actor):
         self.mover = Components.MoveSystem(self)
         self.mover.friction = 0.9
 
-        self.trigger = Components.Trigger(physicalEngine.Circle(coordinate, 100))
+        self.trigger = Components.Trigger(PhysicalEngine.Circle(coordinate, 100))
         self.triggerSetting = 'c'
     
     def collided(self):
@@ -47,7 +47,7 @@ class TestActor1(GameObject.Actor):
     def __init__(self, coordinate):
         super().__init__(coordinate)
         self.colliderSetting = 'gc'
-        self.collider = physicalEngine.Circle(coordinate, 20)
+        self.collider = PhysicalEngine.Circle(coordinate, 20)
 
         self.renderer = Components.RenderSystem(self)
         self.renderer.setImage('testSource/player.png')
@@ -69,7 +69,7 @@ class TestActor2(GameObject.Actor):
     def __init__(self, coordinate):
         super().__init__(coordinate)
        # self.colliderSetting = 'gc'
-       # self.collider = physicalEngine.Circle(coordinate, 5)
+       # self.collider = PhysicalEngine.Circle(coordinate, 5)
 
         self.renderer = Components.RenderSystem(self)
         self.renderer.setImage('testSource/player.png')
@@ -79,7 +79,7 @@ class TestActor2(GameObject.Actor):
         self.mover = Components.MoveSystem(self)
         self.mover.friction = 0.9
 
-        self.trigger = Components.Trigger(physicalEngine.Circle(coordinate, 100))
+        self.trigger = Components.Trigger(PhysicalEngine.Circle(coordinate, 100))
         self.triggerSetting = 'c'
     
     def collided(self):
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     for i in range(100):
         characterObjList.append(TestActor2((i,i)))
     keys = [False, False]#leftGoKey, RightGoKey
-    collision = physicalEngine.Collision()
+    collision = PhysicalEngine.Collision()
     player = characterObjList[0]
 
     while not done:
@@ -132,6 +132,7 @@ if __name__ == "__main__":
         for obj in characterObjList:
             obj.update()#call update() per frame
 
+        #=======================collision Detection=============================================================
             if obj.collider:#collision detection.if collided, call collided().(characterObject)
                 if 'g' in obj.colliderSetting:
                     for ground in groundObjList:
@@ -160,7 +161,7 @@ if __name__ == "__main__":
                             if collision.AABBvsAABB(obj.trigger.AABB, otherObj.collider.AABB):
                                 if collision.ActorvsActor(obj.trigger.component, otherObj.collider):
                                     obj.triggerCollided(otherObj)
-                    
+        #=======================collision Detection=============================================================                    
 
         if keys[0]:# player movement
             player.mover.moveXByAccel(-0.5)
@@ -172,12 +173,7 @@ if __name__ == "__main__":
                 character.renderer.render(screen)
             except AttributeError:
                 pass
-        
-        for groundObj in groundObjList:
-            pass
-        for character in characterObjList:
-            pass
-        
+
         pygame.display.flip()
         print('FPS: ', 1.0/(time.time()-startTime))
 
