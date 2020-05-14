@@ -1,7 +1,7 @@
 import numpy as np
 import math
 import time
-import physicalEngine
+import PhysicalEngine
 import pygame
 
 class RenderSystem:
@@ -60,18 +60,18 @@ class HealthSystem:
 
 class MoveSystem:
     '''move system. move target coordinate and collider'''
-    def __init__(self, parent):
-        '''parent must be self(actor's self)'''
+    def __init__(self, target):
+        '''target must be self(actor's self)'''
         self.speedX = 0
         self.speedY = 0
-        self.target = parent
+        self.target = target
         self.angle = 0
         self.friction = 1
         self.airResistance = 1
     
     def makingAABB(self):
-        if type(self.target.collider) is physicalEngine.Circle:
-            self.target.collider.AABB = physicalEngine.AABB((self.target.collider.centerDot[0]-self.target.collider.radius, self.target.collider.centerDot[1]-self.target.collider.radius), (self.target.collider.centerDot[0]+self.target.collider.radius, self.target.collider.centerDot[1]+self.target.collider.radius))
+        if type(self.target.collider) is PhysicalEngine.Circle:
+            self.target.collider.AABB = PhysicalEngine.AABB((self.target.collider.centerDot[0]-self.target.collider.radius, self.target.collider.centerDot[1]-self.target.collider.radius), (self.target.collider.centerDot[0]+self.target.collider.radius, self.target.collider.centerDot[1]+self.target.collider.radius))
         else:
             xList = []
             yList = []
@@ -79,7 +79,7 @@ class MoveSystem:
                 xList.append(dot[0])
                 yList.append(dot[1])
 
-            self.target.collider.AABB = physicalEngine.AABB((min(xList), min(yList)), (max(xList), max(yList)))
+            self.target.collider.AABB = PhysicalEngine.AABB((min(xList), min(yList)), (max(xList), max(yList)))
 
     def moveXByAccel(self, acceleration):
         self.speedX += acceleration
@@ -92,24 +92,34 @@ class MoveSystem:
     
     def rotate(self, angle):
         self.angle += angle
-        try:
+        if self.angle >= 360:
+            self.angle -= 360
+        if self.angle < 0:
+            self.angle += 360
+        self.target.angle = self.angle
+        if angle == 90:
+            expression = np.array([[0, -1], [1, 0]])
+        elif angle == 180:
+            expression = np.array([[-1, 0], [0, -2]])
+        elif angle == 270:
+            expression = np.array([[0, 1], [-1, 0]])
+        else:
+            angle = math.radians(angle)
+            expression = np.array([[math.cos(angle), -math.sin(angle)],[math.sin(angle), math.cos(angle)]])
+        
+        centeroidDot = False
+        if self.target.collider and type(self.target.collider) is PhysicalEngine.Polygon:
             centeroidDot = ((self.target.collider.AABB.minX + self.target.collider.AABB.maxX)/2, (self.target.collider.AABB.minY + self.target.collider.AABB.maxY)/2) 
-            if angle == 90:
-                expression = np.array([[0, -1], [1, 0]])
-            elif angle == 180:
-                expression = np.array([[-1, 0], [0, -2]])
-            elif angle == 270:
-                expression = np.array([[0, 1], [-1, 0]])
-            else:
-                angle = math.radians(angle)
-                expression = np.array([[math.cos(angle), -math.sin(angle)],[math.sin(angle), math.cos(angle)]])
-
             for i in range(len(self.target.collider.dotList)):
-                self.target.collider.dotList[i] = np.dot(expression, (self.dotList[i]-centeroidDot).T) + centeroidDot
-
+                self.target.collider.dotList[i] = np.dot(expression, (self.target.collider.dotList[i]-centeroidDot).T) + centeroidDot
+                
             self.makingAABB()
-        except AttributeError:
-            pass
+        if self.target.trigger and type(self.target.trigger) is PhysicalEngine.Polygon:
+            if not centeroidDot:
+                centeroidDot = ((self.target.trigger.AABB.minX + self.target.trigger.AABB.maxX)/2, (self.target.trigger.AABB.minY + self.target.trigger.AABB.maxY)/2)
+            for i in range(len(self.target.trigger.dotList)):
+                self.target.collider.dotList[i] = np.dot(expression, (self.target.trigger.dotList[i]-centeroidDot).T) + centeroidDot
+            self.target.trigger.makingAABB()
     
     def idle(self):
         if abs(self.speedX)<0.0001:
@@ -122,7 +132,7 @@ class MoveSystem:
         expression = np.array([self.speedX, self.speedY])
         self.target.coordinate += expression
         if self.target.collider:
-            if type(self.target.collider) is physicalEngine.Polygon:
+            if type(self.target.collider) is PhysicalEngine.Polygon:
                 for i in range(len(self.target.collider.dotList)):
                     self.target.collider.dotList[i] += expression
             else:
@@ -130,7 +140,7 @@ class MoveSystem:
             self.makingAABB()
             
         if self.target.trigger:
-            if type(self.target.trigger) is physicalEngine.Polygon:
+            if type(self.target.trigger) is PhysicalEngine.Polygon:
                 for i in range(len(self.target.trigger.component.dotList)):
                     self.target.trigger.component.dotList[i] += expression
             else:
@@ -216,8 +226,8 @@ class Trigger:
         self.AABB = self.makingAABB()
     
     def makingAABB(self):
-        if type(self.component) is physicalEngine.Circle:
-            self.AABB = physicalEngine.AABB((self.component.centerDot[0]-self.component.radius, self.component.centerDot[1]-self.component.radius), (self.component.centerDot[0]+self.component.radius, self.component.centerDot[1]+self.component.radius))
+        if type(self.component) is PhysicalEngine.Circle:
+            self.AABB = PhysicalEngine.AABB((self.component.centerDot[0]-self.component.radius, self.component.centerDot[1]-self.component.radius), (self.component.centerDot[0]+self.component.radius, self.component.centerDot[1]+self.component.radius))
         else:
             xList = []
             yList = []
@@ -225,6 +235,6 @@ class Trigger:
                 xList.append(dot[0])
                 yList.append(dot[1])
 
-            self.AABB = physicalEngine.AABB((min(xList), min(yList)), (max(xList), max(yList)))
+            self.AABB = PhysicalEngine.AABB((min(xList), min(yList)), (max(xList), max(yList)))
 
     
