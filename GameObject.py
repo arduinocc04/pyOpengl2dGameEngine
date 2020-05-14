@@ -1,4 +1,4 @@
-import physicalEngine
+import PhysicalEngine
 import numpy as np
 
 class Actor:
@@ -15,6 +15,7 @@ class Actor:
         self.triggerSetting = 'n'#n->None, p->playerOnly, c->characterOnly. usage: 'n' or 'pc' or 'cp' or 'p' or 'c'
 
         self.coordinate = np.array([float(coordinate[0]), float(coordinate[1])])
+        self.angle = 0
     
     def update(self):
         pass
@@ -27,12 +28,10 @@ class Actor:
 
 
 class Ground:
-    def __init__(self, componentList, coordinate, angle=0):
-        self.componentList = []
-        self.angle = angle
+    def __init__(self, coordinate):
+        self.collider = False
         self.coordinate = np.array(coordinate)
-        self.friction = 1
-
+        self.angle = 0
 class BackGround:
     def __init__(self):
         pass
