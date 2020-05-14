@@ -14,28 +14,32 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 FONT = 'malgungothic'
 font = pygame.font.SysFont(FONT, 20)
-helpText = ['ctrl+P:Making Polygon', 'ctrl+C:Making Circle', 'ctrl+q:Finish draw shape', 'ctrl+F:Finish and extract.',
-            'ctrl+d:Delete Shape', 'ctrl+M:move Screen', 'ctrl+r:rotateLastModifedShape.', 'arrowTo rotate(+-1), ctrl+arrow to rotate(+-10)', 
-            'Set mode and click Coordinate.', 'esc or alt+F4: Close']
-isGround = input('is ground or actor. ground->y, actor ->n')
+helpText = ['ctrl+P:Making Polygon', 'ctrl+C:Making Circle', 'ctrl+q:Finish draw shape', 'ctrl+F:Finish and extract.', 'ctrl+h: toggle helpMessage', 'ctrl+y: make rectangle that surround image',
+            'ctrl+d:Delete Shape', 'ctrl+M:move Screen', 'ctrl+r:rotateLastModifedShape.', 'arrowTo rotate(+-1), ctrl+arrow to rotate(+-10)', 'ctrl+v: toggle show real size in game',
+            'upArrow, downArrow to zoom', 'firstInputShape->collider, second->trigger(if need)', 'Set mode and click Coordinate.', 'esc or alt+F4: Close']
+for text in helpText:
+    print(text)
+#==================================config==========================================
+isGround = input('is ground or actor. ground->y, actor ->n>>>  ')
 if isGround == 'n':
     isGround = False
-actorName = input('what is your actor\'s name?')
-actorCoordinate = input('where to place your actor input like x y. ex) 23 100').split()
+actorName = input('what is your actor\'s name?>>>  ')
+actorCoordinate = input('where to place your actor input like x y. ex) 23 100>>>  ').split()
 actorCoordinate[0], actorCoordinate[1] = int(actorCoordinate[0]), int(actorCoordinate[1])
-needRenderer = input('Do you need render?  y/n')
+needRenderer = input('Do you need render?  y/n>>>  ')
 if needRenderer == 'n':
     needRenderer = False
 if needRenderer:
-    actorImage = input('Input your image directory. ex) testSource/image.png')
+    actorImageDir = input('Input your image directory. ex) testSource/image.png>>>  ')
+needTrigger = False
 if not isGround:
-    colliderSetting = input('what is your collider setting? g->ground only, c-> character only, gc->both. g/c/gc')
-    needTrigger = input('Do you need trigger? y/n')
+    colliderSetting = input('what is your collider setting? g->ground only, c-> character only, gc->both. g/c/gc>>>>  ')
+    needTrigger = input('Do you need trigger? y/n>>>  ')
     if needTrigger == 'n':
         needTrigger = False
     if needTrigger:
-        triggerSetting = input('hwat is your trigger setting? p->player only, c-> character only(except player) pc->both p/c/pc')
-
+        triggerSetting = input('hwat is your trigger setting? p->player only, c-> character only(except player) pc->both p/c/pc>>>  ')
+#===================================config===============================================
 
 
 def renderTextsGroup(coordinate, textList, fontSize, color, backgroundColor, antialias=True):
@@ -73,9 +77,11 @@ class Poly:
     def __init__(self):
         self.dotList = []
         self.angle = 0
+        self.basicDotList = []
 
     def appendNewDot(self, coordinate):
         self.dotList.append(coordinate)
+        self.basicDotList.append(coordinate)
     
     def isDotInDotList(self, dot):
         if dot in self.dotList:
@@ -84,10 +90,10 @@ class Poly:
 
     def extract(self):
         dotList = ''
-        for dot in self.dotList:
-            dotList += str(dot) + ' '
-        dotList = dotList[:-1]
-        return f'physicalEngine.Polygon({dotList}, {self.angle})'
+        for dot in self.basicDotList:
+            dotList += f'({dot[0]}, {dot[1]}), '
+        dotList = dotList[:-2]
+        return f'PhysicalEngine.Polygon({dotList})'
     
     def rotate(self, angle):
         xList = []
@@ -128,7 +134,7 @@ class Circle:
         self.radius = radius
 
     def extract(self):
-        return f'physicalEngine.Circle({str(self.centerDot)}, {self.radius})'
+        return f'PhysicalEngine.Circle({str(self.centerDot)}, {self.radius})'
 
 
 mode = 'Move'
@@ -142,7 +148,12 @@ coordiFont = pygame.font.SysFont(FONT, 10)
 zoom = 1
 lineDistance = basicLineDistance
 screen = pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN)
-actorImage = pygame.image.load(actorImage).convert_alpha()
+if needRenderer:
+    actorBasicImage = pygame.image.load(actorImageDir).convert_alpha()
+    imageWidth, imageHeight = actorBasicImage.get_rect().size
+    actorImage = pygame.transform.scale(actorBasicImage, (imageWidth*lineDistance, imageHeight*lineDistance))# in game: + 1px means +1 x. but in this tool: +lineDistancepx means +1 x
+showHelper = True
+showRealSize = False
 while not done:
     #clock.tick(FPS)
     for event in pygame.event.get():
@@ -154,8 +165,8 @@ while not done:
 
             if mode == 'MakingPoly':
                 if nowShape.isDotInDotList(dot):
-                    mode = 'QUIT'
                     shapeList.append(nowShape)
+                    mode = 'QUIT'
                 else:
                     nowShape.appendNewDot(dot)
                         
@@ -243,14 +254,29 @@ while not done:
                 if event.key == pygame.K_r:
                     mode = "Rotate"
                 if event.key == pygame.K_q:
-                    shapeList.append(nowShape)
                     mode = 'QUIT'
+                    shapeList.append(nowShape)
                 if event.key == pygame.K_f:
                     mode = 'EXTRACT'
-                    with open('result.txt', 'w+t', encoding='utf8') as f:
-                        for shape in shapeList:
-                            f.write(shape.extract() + '\n')
-                    done = True
+                if event.key == pygame.K_y:
+                    nowShape = Poly()
+                    nowShape.appendNewDot(actorCoordinate)
+                    nowShape.appendNewDot((actorCoordinate[0], actorCoordinate[1]-imageHeight))
+                    nowShape.appendNewDot((actorCoordinate[0]+imageWidth, actorCoordinate[1]-imageHeight))
+                    nowShape.appendNewDot((actorCoordinate[0]+imageWidth, actorCoordinate[1]))
+                    shapeList.append(nowShape)
+                    mode = 'QUIT'
+                if event.key == pygame.K_h:
+                    showHelper = not(showHelper)
+                if event.key == pygame.K_v:
+                    showRealSize = not showRealSize
+                    if showRealSize:
+                        prevLineDistance = lineDistance
+                        actorImage = pygame.transform.scale(actorBasicImage, (imageWidth, imageHeight))
+                        lineDistance = 1
+                    else:
+                        lineDistance = prevLineDistance
+                        actorImage = pygame.transform.scale(actorBasicImage, (imageWidth*lineDistance, imageHeight*lineDistance))
             if (altPressed and event.key == pygame.K_F4) or event.key == pygame.K_ESCAPE:
                 done = True
 
@@ -260,8 +286,8 @@ while not done:
             if event.key == pygame.K_LALT:
                 altPressed = False
 
+    #========================draw coordinate system============================================
     screen.fill(WHITE)
-
     for i in range(SCREEN_SIZE[1]//lineDistance):  # draw x line
         pygame.draw.line(screen, BLACK, [0, i*lineDistance], [SCREEN_SIZE[0], i*lineDistance], 1)
 
@@ -273,7 +299,14 @@ while not done:
 
     for i in range(SCREEN_SIZE[1]//lineDistance):  # draw y value
         screen.blit(coordiFont.render(str(screenCoordinate[1]//lineDistance + i), True, BLACK), (SCREEN_SIZE[0]//2,SCREEN_SIZE[1] - (SCREEN_SIZE[1]%lineDistance + lineDistance*i + 12)))  # 12는 y좌표 살짝 위에 띄우기 위해 넣은 값.
-
+    
+    if showRealSize:#del grid, coordinate text.
+        screen.fill(WHITE)
+    #===================================draw coordinate system==========================
+    
+    #============================render=================================================
+    if needRenderer:
+        screen.blit(actorImage, dotToScreenDot(actorCoordinate))#render actor's image
     if mode == 'MakingPoly':
         for i in range(len(nowShape.dotList)):
             if len(nowShape.dotList) > 1:
@@ -300,10 +333,35 @@ while not done:
             pygame.draw.circle(screen, BLACK,
                                dotToScreenDot(shape.centerDot),
                                round(shape.radius*lineDistance), 1)
-
-    renderTextsGroup((0, 0), helpText, 20, BLACK, WHITE)
+    if showHelper:
+        renderTextsGroup((0, 0), helpText, 20, BLACK, WHITE)
     screen.blit(font.render(f'MODE: {mode}', True, BLACK, WHITE), (SCREEN_SIZE[0] - 200, 0))#show mode
-    screen.blit(actorImage, actorCoordinate)#render actor's image
+    #=====================================================================================
+
+    if mode == 'EXTRACT':
+        with open('result.txt', 'w+t', encoding='utf8') as f:
+            if isGround:
+                parent = 'GameObject.Ground'
+            else:
+                parent = 'GameObject.Actor'
+            f.write(f'class {actorName}({parent}):\n')
+            f.write(f'    def __init__(self, coordinate):\n')
+            f.write(f'        super().__init__(self, coordinate)\n\n')
+            f.write(f'        self.collider = {shapeList[0].extract()}\n\n')
+            if not isGround:
+                f.write(f'        self.colliderSetting = \'{colliderSetting}\'\n')
+            if needRenderer:
+                f.write(f'        self.renderer = Components.RenderSystem(self)\n')
+                f.write(f'        self.renderer.setImage = \'{actorImageDir}\'\n\n')
+            if needTrigger:
+                f.write(f'        self.triggerSetting = \'{triggerSetting}\'\n')
+                f.write(f'        self.trigger = {shapeList[1].extract()}\n\n')
+            if shapeList[0].angle != 0:
+                f.write(f'        self.mover = Components.MoveSystem(self)\n')
+                f.write(f'        self.mover.rotate({shapeList[0].angle})')
+
+        done = True
+    
     pygame.display.flip()
 
 pygame.quit()
