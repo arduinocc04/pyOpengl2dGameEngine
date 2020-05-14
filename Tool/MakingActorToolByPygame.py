@@ -4,7 +4,7 @@ import numpy as np
 
 pygame.init()
 SCREEN_SIZE = (1920, 1080)
-screen = pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN)
+
 basicLineDistance = 20
 done = False
 shapeList = []
@@ -17,6 +17,26 @@ font = pygame.font.SysFont(FONT, 20)
 helpText = ['ctrl+P:Making Polygon', 'ctrl+C:Making Circle', 'ctrl+q:Finish draw shape', 'ctrl+F:Finish and extract.',
             'ctrl+d:Delete Shape', 'ctrl+M:move Screen', 'ctrl+r:rotateLastModifedShape.', 'arrowTo rotate(+-1), ctrl+arrow to rotate(+-10)', 
             'Set mode and click Coordinate.', 'esc or alt+F4: Close']
+isGround = input('is ground or actor. ground->y, actor ->n')
+if isGround == 'n':
+    isGround = False
+actorName = input('what is your actor\'s name?')
+actorCoordinate = input('where to place your actor input like x y. ex) 23 100').split()
+actorCoordinate[0], actorCoordinate[1] = int(actorCoordinate[0]), int(actorCoordinate[1])
+needRenderer = input('Do you need render?  y/n')
+if needRenderer == 'n':
+    needRenderer = False
+if needRenderer:
+    actorImage = input('Input your image directory. ex) testSource/image.png')
+if not isGround:
+    colliderSetting = input('what is your collider setting? g->ground only, c-> character only, gc->both. g/c/gc')
+    needTrigger = input('Do you need trigger? y/n')
+    if needTrigger == 'n':
+        needTrigger = False
+    if needTrigger:
+        triggerSetting = input('hwat is your trigger setting? p->player only, c-> character only(except player) pc->both p/c/pc')
+
+
 
 def renderTextsGroup(coordinate, textList, fontSize, color, backgroundColor, antialias=True):
     maxTextLen = 0
@@ -121,7 +141,8 @@ moving = False
 coordiFont = pygame.font.SysFont(FONT, 10)
 zoom = 1
 lineDistance = basicLineDistance
-
+screen = pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN)
+actorImage = pygame.image.load(actorImage).convert_alpha()
 while not done:
     #clock.tick(FPS)
     for event in pygame.event.get():
@@ -204,6 +225,7 @@ while not done:
                 temporaryZoomLev = zoom-0.5
                 if temporaryZoomLev<=0:
                     screen.blit(font.render('Cannnot Zoom!', True, (255, 0, 0)), (SCREEN_SIZE[0]//2, SCREEN_SIZE[1]//2))
+                    temporaryZoomLev = zoom
                 else:
                     zoom = temporaryZoomLev
                 lineDistance = round(zoom*basicLineDistance)
@@ -281,7 +303,7 @@ while not done:
 
     renderTextsGroup((0, 0), helpText, 20, BLACK, WHITE)
     screen.blit(font.render(f'MODE: {mode}', True, BLACK, WHITE), (SCREEN_SIZE[0] - 200, 0))#show mode
-
+    screen.blit(actorImage, actorCoordinate)#render actor's image
     pygame.display.flip()
 
 pygame.quit()
