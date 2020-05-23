@@ -3,7 +3,9 @@ import math
 import time
 import PhysicalEngine
 import pygame
-
+SCREEN_SIZE = (1920, 1080)
+def dotToScreenDot(dot):
+    return dot[0], SCREEN_SIZE[1]-dot[1]
 class RenderSystem:
     '''show image on actor's coordinate'''
     def __init__(self, target):
@@ -12,8 +14,8 @@ class RenderSystem:
         self.image = pygame.image.load(image).convert_alpha()
     def setImgSize(self, width, height):
         self.image = pygame.transform.scale(self.image, (width, height))
-    def render(self, screen):
-        screen.blit(self.image, self.target.coordinate)
+    def render(self, screen, coordinate):
+        screen.blit(self.image, coordinate)
         #self.target.coordinate 에 render
 
 class TalkSystem:
@@ -68,18 +70,6 @@ class MoveSystem:
         self.angle = 0
         self.friction = 1
         self.airResistance = 1
-    
-    def makingAABB(self):
-        if type(self.target.collider) is PhysicalEngine.Circle:
-            self.target.collider.AABB = PhysicalEngine.AABB((self.target.collider.centerDot[0]-self.target.collider.radius, self.target.collider.centerDot[1]-self.target.collider.radius), (self.target.collider.centerDot[0]+self.target.collider.radius, self.target.collider.centerDot[1]+self.target.collider.radius))
-        else:
-            xList = []
-            yList = []
-            for dot in self.target.collider.dotList:
-                xList.append(dot[0])
-                yList.append(dot[1])
-
-            self.target.collider.AABB = PhysicalEngine.AABB((min(xList), min(yList)), (max(xList), max(yList)))
 
     def moveXByAccel(self, acceleration):
         self.speedX += acceleration
@@ -110,15 +100,15 @@ class MoveSystem:
         centeroidDot = False
         if self.target.collider and type(self.target.collider) is PhysicalEngine.Polygon:
             centeroidDot = ((self.target.collider.AABB.minX + self.target.collider.AABB.maxX)/2, (self.target.collider.AABB.minY + self.target.collider.AABB.maxY)/2) 
-            for i in range(len(self.target.collider.dotList)):
-                self.target.collider.dotList[i] = np.dot(expression, (self.target.collider.dotList[i]-centeroidDot).T) + centeroidDot
+            for i in range(len(self.target.collider.component.dotList)):
+                self.target.collider.component.dotList[i] = np.dot(expression, (self.target.collider.component.dotList[i]-centeroidDot).T) + centeroidDot
                 
-            self.makingAABB()
+            self.target.collider.makingAABB()
         if self.target.trigger and type(self.target.trigger) is PhysicalEngine.Polygon:
             if not centeroidDot:
                 centeroidDot = ((self.target.trigger.AABB.minX + self.target.trigger.AABB.maxX)/2, (self.target.trigger.AABB.minY + self.target.trigger.AABB.maxY)/2)
-            for i in range(len(self.target.trigger.dotList)):
-                self.target.collider.dotList[i] = np.dot(expression, (self.target.trigger.dotList[i]-centeroidDot).T) + centeroidDot
+            for i in range(len(self.target.trigger.component.dotList)):
+                self.target.collider.component.dotList[i] = np.dot(expression, (self.target.trigger.component.dotList[i]-centeroidDot).T) + centeroidDot
             self.target.trigger.makingAABB()
     
     def idle(self):
@@ -133,11 +123,11 @@ class MoveSystem:
         self.target.coordinate += expression
         if self.target.collider:
             if type(self.target.collider) is PhysicalEngine.Polygon:
-                for i in range(len(self.target.collider.dotList)):
-                    self.target.collider.dotList[i] += expression
+                for i in range(len(self.target.collider.component.dotList)):
+                    self.target.collider.component.dotList[i] += expression
             else:
-                self.target.collider.centerDot += expression
-            self.makingAABB()
+                self.target.collider.component.centerDot += expression
+            self.target.collider.makingAABB()
             
         if self.target.trigger:
             if type(self.target.trigger) is PhysicalEngine.Polygon:
@@ -147,10 +137,13 @@ class MoveSystem:
                 self.target.trigger.component.centerDot += expression
             self.target.trigger.makingAABB()
         
-class RigidPhysicalSystem:
+class RigidPhysicsSystem:
     '''simulation physics'''
-    def __init__(self):
-        pass
+    def __init__(self, mover):
+        '''mover must be self.mover'''
+        self.targetMover = mover
+    def gravity(self, force):
+        self.targetMover.moveYByAccel(force)
 
 class EventSystem:
     '''may be use for custom event'''
@@ -223,7 +216,7 @@ class Trigger:
     '''use when you need to have two collider.'''
     def __init__(self, component):
         self.component = component
-        self.AABB = self.makingAABB()
+        self.makingAABB()
     
     def makingAABB(self):
         if type(self.component) is PhysicalEngine.Circle:
@@ -237,4 +230,20 @@ class Trigger:
 
             self.AABB = PhysicalEngine.AABB((min(xList), min(yList)), (max(xList), max(yList)))
 
-    
+class Collider:
+    '''collider'''
+    def __init__(self, component):
+        self.component = component
+        self.makingAABB()
+
+    def makingAABB(self):
+        if type(self.component) is PhysicalEngine.Circle:
+            self.AABB = PhysicalEngine.AABB((self.component.centerDot[0]-self.component.radius, self.component.centerDot[1]-self.component.radius), (self.component.centerDot[0]+self.component.radius, self.component.centerDot[1]+self.component.radius))
+        else:
+            xList = []
+            yList = []
+            for dot in self.component.dotList:
+                xList.append(dot[0])
+                yList.append(dot[1])
+
+            self.AABB = PhysicalEngine.AABB((min(xList), min(yList)), (max(xList), max(yList)))

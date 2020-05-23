@@ -141,7 +141,7 @@ mode = 'Move'
 ctrlPressed = False
 altPressed = False
 shapeList = []
-screenCoordinate = [0, 0]
+screenCoordinate = actorCoordinate
 moving = False
 
 coordiFont = pygame.font.SysFont(FONT, 10)
@@ -154,6 +154,7 @@ if needRenderer:
     actorImage = pygame.transform.scale(actorBasicImage, (imageWidth*lineDistance, imageHeight*lineDistance))# in game: + 1px means +1 x. but in this tool: +lineDistancepx means +1 x
 showHelper = True
 showRealSize = False
+angle = 0
 while not done:
     #clock.tick(FPS)
     for event in pygame.event.get():
@@ -216,17 +217,25 @@ while not done:
             if event.key == pygame.K_RIGHT and mode == 'Rotate':
                 if type(shapeList[-1]) is Poly:
                     if ctrlPressed:
+                        angle -= 10
                         shapeList[-1].rotate(-10)
+                        actorImage = pygame.transform.rotate(actorBasicImage, angle)
                     else:
+                        angle -= 1
                         shapeList[-1].rotate(-1)
+                        actorImage = pygame.transform.rotate(actorBasicImage, angle)
                 else:
                     pass
             if event.key == pygame.K_LEFT and mode == 'Rotate':
                 if type(shapeList[-1]) is Poly:
                     if ctrlPressed:
+                        angle += 10
                         shapeList[-1].rotate(10)
+                        actorImage = pygame.transform.rotate(actorBasicImage, 10)
                     else:
+                        angle += 1
                         shapeList[-1].rotate(1)
+                        actorImage = pygame.transform.rotate(actorBasicImage, 1)
                 else:
                     pass
             if event.key == pygame.K_UP:
@@ -347,7 +356,7 @@ while not done:
             f.write(f'class {actorName}({parent}):\n')
             f.write(f'    def __init__(self, coordinate):\n')
             f.write(f'        super().__init__(self, coordinate)\n\n')
-            f.write(f'        self.collider = {shapeList[0].extract()}\n\n')
+            f.write(f'        self.collider = Components.Collider({shapeList[0].extract()})\n')
             if not isGround:
                 f.write(f'        self.colliderSetting = \'{colliderSetting}\'\n')
             if needRenderer:
@@ -355,7 +364,7 @@ while not done:
                 f.write(f'        self.renderer.setImage = \'{actorImageDir}\'\n\n')
             if needTrigger:
                 f.write(f'        self.triggerSetting = \'{triggerSetting}\'\n')
-                f.write(f'        self.trigger = {shapeList[1].extract()}\n\n')
+                f.write(f'        self.trigger = Components.Trigger({shapeList[1].extract()})\n\n')
             if shapeList[0].angle != 0:
                 f.write(f'        self.mover = Components.MoveSystem(self)\n')
                 f.write(f'        self.mover.rotate({shapeList[0].angle})')

@@ -125,7 +125,7 @@ class Collision:
 	    return True
 
     def GrahamScan(self,P):
-	    P.sort(key=lambda dot: dot[1])			# Sort the set of points
+	    #P.sort(key=lambda dot: dot[1])			# Sort the set of points
 	    L_upper = [P[0], P[1]]		# Initialize upper part
 	    # Compute the upper part of the hull
 	    for i in range(2,len(P)):

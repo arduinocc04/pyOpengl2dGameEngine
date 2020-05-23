@@ -4,6 +4,7 @@ import numpy as np
 class Actor:
     def __init__(self, coordinate):
         #this are components. you can what that you want
+        self.type = False
         self.collider = False
         self.colliderSetting = 'n'#n->None, g->ground, c->character. usage: 'n' or 'gc' or 'cg' or 'g' 'c'
 
@@ -21,7 +22,7 @@ class Actor:
         pass
     def died(self):
         pass
-    def collided(self):
+    def collided(self, collidedObj):
         pass
     def triggerCollided(self, collidedObj):
         pass
@@ -32,6 +33,7 @@ class Ground:
         self.collider = False
         self.coordinate = np.array(coordinate)
         self.angle = 0
+        self.type = True
 class BackGround:
     def __init__(self):
         pass
