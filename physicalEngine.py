@@ -60,17 +60,12 @@ class Collision:
     def getDotvsDotDistanceSquared(self,dot1, dot2):
         return (dot1[0]-dot2[0])**2 + (dot1[1]-dot2[1])**2
 
-    def getLinevsDotDistance(self, line1, dot1):
-        assert type(line1) is Line
-
+    def getLinevsDotDistance(self, line1:Line, dot1):
         a = line1.dotList[0][0]-line1.dotList[1][0]
         b = line1.dotList[0][1]-line1.dotList[1][1]
         return abs(a*dot1[1] - b*dot1[0] + line1.dotList[1][0]*b - line1.dotList[1][1]*a)/(math.sqrt(a**2 + b**2))#점과 직선사이 공식.
 
-    def LineSegmentvsLineSegment(self, line1, line2):
-        assert type(line1) is Line
-        assert type(line2) is Line
-
+    def LineSegmentvsLineSegment(self, line1:Line, line2:Line):
         if line1.slope == line2.slope:
             return False
         if line1.slope == None:
@@ -96,10 +91,7 @@ class Collision:
                 polyIndexList.append(i)
         return polyIndexList
 
-    def AABBvsAABB(self, AABB1, AABB2):
-        assert type(AABB1) is AABB
-        assert type(AABB2) is AABB
-
+    def AABBvsAABB(self, AABB1:AABB, AABB2:AABB):
         if AABB1.minX>AABB2.maxX or AABB2.minX>AABB1.maxX:
             return False
         if AABB1.minY>AABB2.maxY or AABB2.minY>AABB1.maxY:
@@ -143,10 +135,7 @@ class Collision:
 	    L = L_upper + L_lower		# Build the full hull
 	    return L
 
-    def PolyvsPoly(self, polygon1, polygon2, reversed= False):
-        assert type(polygon1) is Polygon
-        assert type(polygon2) is Polygon
-
+    def PolyvsPoly(self, polygon1:Polygon, polygon2:Polygon, reversed= False):
         if not(reversed):#거꾸로 먼저하고, 이미 겹쳐있다고 판단하면, 그냥 true return.
             if self.PolyvsPoly(polygon2, polygon1, reversed=True):
                 return True
@@ -164,17 +153,11 @@ class Collision:
             return False
         return True
 
-    def CirclevsCircle(self, circle1, circle2):
-        assert type(circle1) is Circle
-        assert type(circle2) is Circle
-
+    def CirclevsCircle(self, circle1:Circle, circle2:Circle):
         centerDotDistanceSquared = self.getDotvsDotDistanceSquared(circle1.centerDot, circle2.centerDot)
         return ((circle1.radius + circle2.radius)**2>centerDotDistanceSquared)
 
-    def PolyvsCircle(self, polygon1, circle1):
-        assert type(polygon1) is Polygon
-        assert type(circle1) is Circle
-
+    def PolyvsCircle(self, polygon1:Polygon, circle1:CIrcle):
         for i in range(len(polygon1.dotList)):
             if self.getDotvsDotDistanceSquared(polygon1.dotList[i], circle1.centerDot) < circle1.radius**2:
                 return True
