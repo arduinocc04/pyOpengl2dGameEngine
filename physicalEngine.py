@@ -176,7 +176,7 @@ class Collision:
         assert type(circle1) is Circle
 
         for i in range(len(polygon1.dotList)):
-            if self.getDotvsDotDistanceSquared(polygon1.dotList[i], circle1.centerDot) < circle1.radius:
+            if self.getDotvsDotDistanceSquared(polygon1.dotList[i], circle1.centerDot) < circle1.radius**2:
                 return True
         return False
 
