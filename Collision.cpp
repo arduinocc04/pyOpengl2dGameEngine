@@ -25,8 +25,7 @@ struct Circle {
 };
 
 struct Polygon {
-    int arrayLen;
-    dot* dotList = new dot[arrayLen];
+    dot* dotList;
     AABB AABB;
     bool type = true;
 };
@@ -37,6 +36,86 @@ struct Line {
     float yIntercept;
     dot dotList[2];
     
+};
+
+class Helper
+{
+    public:
+        void delPolyDotList(Polygon poly1) {
+            delete poly1.dotList;
+        }
+
+        AABB makeAABB(float dotList[][2]) {
+            float* xList = new float[sizeof(dotList)/sizeof(float)];
+            float* yList = new float[sizeof(dotList)/sizeof(float)];
+
+            for(int i = 0; i < sizeof(dotList)/sizeof(float); i++) {
+                xList[i] = dotList[i][0];
+                yList[i] = dotList[i][1];
+            }
+
+            float minX = xList[0];
+            float maxX = xList[0];
+            float minY = yList[0];
+            float maxY = yList[0];
+            for(int i = 0; i< sizeof(dotList)/sizeof(float); i++) {
+                if(xList[i] < minX) {
+                    minX = xList[i];
+                }
+                else if(xList[i] > maxX) {
+                    maxX = xList[i];
+                }
+
+                if(yList[i] < minY) {
+                    minY = yList[i];
+                }
+                else if(yList[i] > maxY) {
+                    maxY = yList[i];
+                }
+            }
+            //return process..    
+            AABB toReturn;
+            toReturn.dotList[0] = {minX, minY};
+            toReturn.dotList[1] = {maxX, minY};
+            toReturn.dotList[2] = {maxX, maxY};
+            toReturn.dotList[3] = {minX, maxY};
+            toReturn.minX = minX;
+            toReturn.maxX = maxX;
+            toReturn.minY = minY;
+            toReturn.maxY = maxY;
+            return toReturn;
+        }
+
+        Polygon makePolygon(float dotList[][2]) {
+            Polygon toReturn;
+            toReturn.dotList = new dot[sizeof(dotList)/sizeof(dot)];
+            dot dot1;
+            int dotListLen = sizeof(dotList)/sizeof(dot);
+            for(int i = 0; i < dotListLen; i++) {
+                dot1 = {dotList[i][0], dotList[i][1]};
+                toReturn.dotList[i] = dot1;
+            }
+            toReturn.AABB = makeAABB(dotList);
+            
+            return toReturn;
+        }   
+
+        Circle makeCircle(float centerDot[2], float radius) {
+            Circle toReturn;
+            toReturn.centerDot.x = centerDot[0];
+            toReturn.centerDot.y = centerDot[1];
+            toReturn.radius = radius;
+            float dots[4][2];
+            dots[0][0] = centerDot[0] - radius;
+            dots[0][1] = centerDot[1] - radius;
+            dots[1][0] = centerDot[0] + radius;
+            dots[1][1] = centerDot[1] - radius;
+            dots[2][0] = centerDot[0] + radius;
+            dots[2][1] = centerDot[1] + radius;
+            dots[3][0] = centerDot[0] - radius;
+            dots[3][1] = centerDot[1] + radius;
+            toReturn.AABB = makeAABB(dots);
+        }
 };
 
 class Collision
