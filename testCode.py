@@ -18,8 +18,8 @@ class TestActor(GameObject.Actor):
     def __init__(self, coordinate):
         super().__init__(coordinate)
         self.colliderSetting = 'g'
-        #self.collider = Components.Collider(PhysicalEngine.Circle(coordinate, 20))
-        self.collider = Components.Collider(PhysicalEngine.Polygon([coordinate, (coordinate[0]+40, coordinate[1]), (coordinate[0]+40, coordinate[1]-40), (coordinate[0], coordinate[1]-40)]))
+        self.collider = Components.Collider(PhysicalEngine.Circle(coordinate, 20))
+        #self.collider = Components.Collider(PhysicalEngine.Polygon([coordinate, (coordinate[0]+40, coordinate[1]), (coordinate[0]+40, coordinate[1]-40), (coordinate[0], coordinate[1]-40)]))
 
         self.renderer = Components.RenderSystem(self)
         self.renderer.setImage('testSource/player.png')
@@ -140,53 +140,53 @@ if __name__ == "__main__":
         for obj in characterObjList:
             obj.update()#call update() per frame
 
-        if collision.AABBvsAABB(screenAABB, obj.collider.AABB):
-            if obj.collider:#collision detection.if collided, call collided().(characterObject)
-                if 'g' in obj.colliderSetting:
-                    for ground in groundObjList:
-                        if collision.AABBvsAABB(obj.collider.AABB, ground.collider.AABB):
-                            if collision.isAABBCompAABB(obj.collider.AABB, ground.collider.AABB):
-                                obj.collided(ground)
-                                screen.blit(font.render('Collided!', True, BLACK), (0, 0))
-                            else:
-                                if collision.ActorvsActor(obj.collider.component, ground.collider.component):
-                                    print('hi')
+            if collision.AABBvsAABB(screenAABB, obj.collider.AABB):
+                if obj.collider:#collision detection.if collided, call collided().(characterObject)
+                    if 'g' in obj.colliderSetting:
+                        for ground in groundObjList:
+                            if collision.AABBvsAABB(obj.collider.AABB, ground.collider.AABB):
+                                if collision.isAABBCompAABB(obj.collider.AABB, ground.collider.AABB):
                                     obj.collided(ground)
                                     screen.blit(font.render('Collided!', True, BLACK), (0, 0))
-
-                if 'c' in obj.colliderSetting:
-                    for otherObj in characterObjList:
-                        if otherObj != obj and otherObj.collider:
-                            if collision.AABBvsAABB(obj.collider.AABB, otherObj.collider.AABB):
-                                if collision.isAABBCompAABB(obj.collider.AABB, otherObj.collider.AABB):
-                                    obj.collided(otherObj)
-                                    otherObj.collided(obj)
-                                    screen.blit(font.render('Collided!', True, BLACK), (0,0))
                                 else:
                                     if collision.ActorvsActor(obj.collider.component, ground.collider.component):
+                                        print('hi')
+                                        obj.collided(ground)
+                                        screen.blit(font.render('Collided!', True, BLACK), (0, 0))
+    
+                    if 'c' in obj.colliderSetting:
+                        for otherObj in characterObjList:
+                            if otherObj != obj and otherObj.collider:
+                                if collision.AABBvsAABB(obj.collider.AABB, otherObj.collider.AABB):
+                                    if collision.isAABBCompAABB(obj.collider.AABB, otherObj.collider.AABB):
                                         obj.collided(otherObj)
                                         otherObj.collided(obj)
                                         screen.blit(font.render('Collided!', True, BLACK), (0,0))
-
-            if obj.trigger:#trigger collision detection
-                if 'p' in obj.triggerSetting:
-                    if not obj is player and player.collider:
-                        if collision.AABBvsAABB(obj.trigger.AABB, player.collider.AABB):
-                            if collision.isAABBCompAABB(obj.trigger.AABB, player.collider.AABB):
-                                obj.triggerCollided(player)
-                            else:
-                                if collision.ActorvsActor(obj.trigger.component, player.collider.component):
+                                    else:
+                                        if collision.ActorvsActor(obj.collider.component, ground.collider.component):
+                                            obj.collided(otherObj)
+                                            otherObj.collided(obj)
+                                            screen.blit(font.render('Collided!', True, BLACK), (0,0))
+    
+                if obj.trigger:#trigger collision detection
+                    if 'p' in obj.triggerSetting:
+                        if not obj is player and player.collider:
+                            if collision.AABBvsAABB(obj.trigger.AABB, player.collider.AABB):
+                                if collision.isAABBCompAABB(obj.trigger.AABB, player.collider.AABB):
                                     obj.triggerCollided(player)
-                        
-                if 'c' in obj.triggerSetting:
-                    for otherObj in characterObjList:
-                        if otherObj != obj and otherObj.collider:
-                            if collision.AABBvsAABB(obj.trigger.AABB, otherObj.collider.AABB):
-                                if collision.isAABBCompAABB(obj.trigger.AABB, otherObj.collider.AABB):
-                                    obj.triggerCollided(otherObj)
                                 else:
-                                    if collision.ActorvsActor(obj.collider.component, otherObj.collider.component):
-                                        obj.triggerCollided(otherObj)        
+                                    if collision.ActorvsActor(obj.trigger.component, player.collider.component):
+                                        obj.triggerCollided(player)
+                            
+                    if 'c' in obj.triggerSetting:
+                        for otherObj in characterObjList:
+                            if otherObj != obj and otherObj.collider:
+                                if collision.AABBvsAABB(obj.trigger.AABB, otherObj.collider.AABB):
+                                    if collision.isAABBCompAABB(obj.trigger.AABB, otherObj.collider.AABB):
+                                        obj.triggerCollided(otherObj)
+                                    else:
+                                        if collision.ActorvsActor(obj.collider.component, otherObj.collider.component):
+                                            obj.triggerCollided(otherObj)        
 
         if keys[0]:# player movement
             player.mover.moveXByAccel(-0.5)
@@ -260,6 +260,6 @@ if __name__ == "__main__":
         if nowFps <60:
             screen.blit(font.render('BAD FPS!', True, BLACK), (SCREEN_SIZE[0]-100, 0))
         pygame.display.flip()
-        print(player.coordinate[0]-player.collider.component.dotList[0][0])
+        #print(player.coordinate[0]-player.collider.component.dotList[0][0])
 
 pygame.quit()
