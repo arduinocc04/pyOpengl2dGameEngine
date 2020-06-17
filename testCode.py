@@ -44,9 +44,7 @@ class TestActor(GameObject.Actor):
     
     def collided(self, otherObj):
         if otherObj.type:#ground->type = True, Actor->type = False
-            self.mover.speedY = 0
-            self.mover.moveYByAccel(0.3)
-            self.mover.idle()
+            self.rigidPhysicsSystem.groundUp()
     def update(self):
         self.rigidPhysicsSystem.gravity(-0.1)
         self.mover.idle()
@@ -76,9 +74,7 @@ class TestActor1(GameObject.Actor):
     
     def collided(self, otherObj):
         if otherObj.type:
-            self.mover.speedY = 0
-            self.mover.moveYByAccel(1)
-            self.mover.idle()
+            self.rigidPhysicsSystem.groundUp()
 
 class TestGround(GameObject.Ground):
     def __init__(self, coordinate):

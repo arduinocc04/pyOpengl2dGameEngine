@@ -142,8 +142,14 @@ class RigidPhysicsSystem:
     def __init__(self, mover):
         '''mover must be self.mover'''
         self.targetMover = mover
+
     def gravity(self, force):
         self.targetMover.moveYByAccel(force)
+
+    def groundUp(self):
+        self.targetMover.speedY = 0
+        self.targetMover.moveYByAccel(0.3)
+        self.targetMover.idle()
 
 class EventSystem:
     '''may be use for custom event'''
