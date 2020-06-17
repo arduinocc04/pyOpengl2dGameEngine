@@ -28,7 +28,9 @@ class Circle:
 
 class Polygon:
     def __init__(self, pointList, angle=0):
-        self.dotList = pointList
+        self.dotList = []
+        for dot in pointList:
+            self.dotList.append(np.array(dot, dtype=np.float))
 
         xList = []
         yList = []
@@ -98,6 +100,17 @@ class Collision:
             return False
         return True
 
+    def isAABBCompAABB(self, AABB1:AABB, AABB2:AABB, reversed=False):
+        if not reversed:
+            if self.isAABBCompAABB(AABB2, AABB1, True):
+                return True
+
+        if AABB1.maxX < AABB2.maxX or AABB1.minX > AABB2.minX:
+            return False
+        if AABB1.maxY < AABB2.maxY or AABB1.minY > AABB2.minY:
+            return False
+        return True
+
     def isDotInPolygon(self, dot1, polygon1):#오른쪽으로 반직선 그어서 교점이 홀수면 내부, 짝수면 외부에 점이 존재한다는 알고리즘 사용.
         dotLine = Line(dot1, (dot1[0]+10000, dot1[1]))
         meetCount = 0
@@ -134,7 +147,7 @@ class Collision:
 	    del L_lower[-1]
 	    L = L_upper + L_lower		# Build the full hull
 	    return L
-
+    '''
     def PolyvsPoly(self, polygon1:Polygon, polygon2:Polygon, reversed= False):
         if not(reversed):#거꾸로 먼저하고, 이미 겹쳐있다고 판단하면, 그냥 true return.
             if self.PolyvsPoly(polygon2, polygon1, reversed=True):
@@ -152,14 +165,23 @@ class Collision:
         if len(points) != len(polygon1.dotList): 
             return False
         return True
+    '''
+    def PolyvsPoly(self, polygon1:Polygon, polygon2:Polygon, reversed= False):
+        if not(reversed):#거꾸로 먼저하고, 이미 겹쳐있다고 판단하면, 그냥 true return.
+            if self.PolyvsPoly(polygon2, polygon1, reversed=True):
+                return True
+
+        if len(self.getPolyDotInOtherPoly(polygon2, polygon1.AABB)):
+            return True
+        return False
 
     def CirclevsCircle(self, circle1:Circle, circle2:Circle):
         centerDotDistanceSquared = self.getDotvsDotDistanceSquared(circle1.centerDot, circle2.centerDot)
         return ((circle1.radius + circle2.radius)**2>centerDotDistanceSquared)
 
-    def PolyvsCircle(self, polygon1:Polygon, circle1:CIrcle):
-        for i in range(len(polygon1.dotList)):
-            if self.getDotvsDotDistanceSquared(polygon1.dotList[i], circle1.centerDot) < circle1.radius**2:
+    def PolyvsCircle(self, polygon1:Polygon, circle1:Circle):
+        for dot in polygon1.dotList:
+            if self.getDotvsDotDistanceSquared(dot, circle1.centerDot) < circle1.radius**2:
                 return True
         return False
 

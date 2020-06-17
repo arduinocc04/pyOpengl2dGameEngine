@@ -5,6 +5,7 @@ import Components
 import pygame
 '''
 characterObjList[0]이 무조건 Player
+좌표는 무조건 []로 입력. !tuple
 '''
 
 def getSquaredDistanceBetweenDot(dot1, dot2):
@@ -16,8 +17,9 @@ def handleY(dot):
 class TestActor(GameObject.Actor):
     def __init__(self, coordinate):
         super().__init__(coordinate)
-        self.colliderSetting = 'gc'
-        self.collider = Components.Collider(PhysicalEngine.Circle(coordinate, 20))
+        self.colliderSetting = 'g'
+        #self.collider = Components.Collider(PhysicalEngine.Circle(coordinate, 20))
+        self.collider = Components.Collider(PhysicalEngine.Polygon([coordinate, (coordinate[0]+40, coordinate[1]), (coordinate[0]+40, coordinate[1]-40), (coordinate[0], coordinate[1]-40)]))
 
         self.renderer = Components.RenderSystem(self)
         self.renderer.setImage('testSource/player.png')
@@ -39,6 +41,7 @@ class TestActor(GameObject.Actor):
         self.rigidPhysicsSystem = Components.RigidPhysicsSystem(self.mover)
     
     def collided(self, otherObj):
+        print('collided')
         if otherObj.type:#ground->type = True, Actor->type = False
             self.mover.speedY = 0
             self.mover.moveYByAccel(1)
@@ -51,13 +54,13 @@ class TestActor(GameObject.Actor):
 class TestActor1(GameObject.Actor):
     def __init__(self, coordinate):
         super().__init__(coordinate)
-        self.colliderSetting = 'gc'
+        self.colliderSetting = 'g'
         self.collider = Components.Collider(PhysicalEngine.Circle(coordinate, 20))
 
         self.renderer = Components.RenderSystem(self)
         self.renderer.setImage('testSource/player.png')
         self.renderer.setImgSize(40, 40)
-        self.AI = Components.AI(self)
+        # self.AI = Components.AI(self)
         
         self.mover = Components.MoveSystem(self)
         self.mover.friction = 0.9
@@ -68,7 +71,7 @@ class TestActor1(GameObject.Actor):
     def update(self):
         self.rigidPhysicsSystem.gravity(-0.1)
         self.mover.idle()
-        self.AI.chase(characterObjList[0], 0.5, 30)
+        # self.AI.chase(characterObjList[0], 0.5, 30)
     
     def collided(self, otherObj):
         if otherObj:
@@ -98,15 +101,16 @@ if __name__ == "__main__":
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
     groundObjList = []
-    characterObjList = [TestActor(handleY((1,100))), TestActor1(handleY((100, 100)))]
+    characterObjList = [TestActor(handleY([1,100])), TestActor1(handleY([100, 100]))]
     for i in range(40):
-        groundObjList.append(TestGround(handleY((i*40,1000))))
+        groundObjList.append(TestGround(handleY([i*40,1000])))
     keys = [False, False]#leftGoKey, RightGoKey
     collision = PhysicalEngine.Collision()
     player = characterObjList[0]
     pygame.init()
     FONT = 'malgungothic'
     font = pygame.font.SysFont(FONT, 20)
+    screenAABB = PhysicalEngine.AABB((0,0), SCREEN_SIZE)
 
     while not done:
         startTime = time.time()
@@ -136,37 +140,53 @@ if __name__ == "__main__":
         for obj in characterObjList:
             obj.update()#call update() per frame
 
-        #=======================collision Detection=============================================================
+        if collision.AABBvsAABB(screenAABB, obj.collider.AABB):
             if obj.collider:#collision detection.if collided, call collided().(characterObject)
                 if 'g' in obj.colliderSetting:
                     for ground in groundObjList:
                         if collision.AABBvsAABB(obj.collider.AABB, ground.collider.AABB):
-                            if collision.ActorvsActor(obj.collider.component, ground.collider.component):
+                            if collision.isAABBCompAABB(obj.collider.AABB, ground.collider.AABB):
                                 obj.collided(ground)
                                 screen.blit(font.render('Collided!', True, BLACK), (0, 0))
+                            else:
+                                if collision.ActorvsActor(obj.collider.component, ground.collider.component):
+                                    print('hi')
+                                    obj.collided(ground)
+                                    screen.blit(font.render('Collided!', True, BLACK), (0, 0))
 
                 if 'c' in obj.colliderSetting:
                     for otherObj in characterObjList:
                         if otherObj != obj and otherObj.collider:
                             if collision.AABBvsAABB(obj.collider.AABB, otherObj.collider.AABB):
-                                if collision.ActorvsActor(obj.collider.component, otherObj.collider.component):
+                                if collision.isAABBCompAABB(obj.collider.AABB, otherObj.collider.AABB):
                                     obj.collided(otherObj)
                                     otherObj.collided(obj)
+                                    screen.blit(font.render('Collided!', True, BLACK), (0,0))
+                                else:
+                                    if collision.ActorvsActor(obj.collider.component, ground.collider.component):
+                                        obj.collided(otherObj)
+                                        otherObj.collided(obj)
+                                        screen.blit(font.render('Collided!', True, BLACK), (0,0))
 
             if obj.trigger:#trigger collision detection
                 if 'p' in obj.triggerSetting:
                     if not obj is player and player.collider:
                         if collision.AABBvsAABB(obj.trigger.AABB, player.collider.AABB):
-                            if collision.ActorvsActor(obj.trigger.component, player.collider.component):
+                            if collision.isAABBCompAABB(obj.trigger.AABB, player.collider.AABB):
                                 obj.triggerCollided(player)
+                            else:
+                                if collision.ActorvsActor(obj.trigger.component, player.collider.component):
+                                    obj.triggerCollided(player)
                         
                 if 'c' in obj.triggerSetting:
                     for otherObj in characterObjList:
                         if otherObj != obj and otherObj.collider:
                             if collision.AABBvsAABB(obj.trigger.AABB, otherObj.collider.AABB):
-                                if collision.ActorvsActor(obj.trigger.component, otherObj.collider.component):
+                                if collision.isAABBCompAABB(obj.trigger.AABB, otherObj.collider.AABB):
                                     obj.triggerCollided(otherObj)
-        #=======================collision Detection=============================================================                    
+                                else:
+                                    if collision.ActorvsActor(obj.collider.component, otherObj.collider.component):
+                                        obj.triggerCollided(otherObj)        
 
         if keys[0]:# player movement
             player.mover.moveXByAccel(-0.5)
@@ -176,16 +196,70 @@ if __name__ == "__main__":
         for character in characterObjList:#render character.(test)
             if character.renderer:# and character != player:
                 a = handleY(character.coordinate)
-                character.renderer.render(screen, (a[0]-player.coordinate[0], a[1]))
+                character.renderer.render(screen, (a[0], a[1]))#-player.coordinate[0], a[1]))
        # player.renderer.render(screen, handleY((500, player.coordinate[1])))
         for ground in groundObjList:
             if ground.renderer:
                 a = handleY(ground.coordinate)
-                ground.renderer.render(screen,(a[0]-player.coordinate[0], a[1]))
+                ground.renderer.render(screen,(a[0], a[1]))#-player.coordinate[0], a[1]))
+        #========For debug. draw collider===============================================
+        for ground in groundObjList:
+            if ground.collider:
+                if type(ground.collider.component) is PhysicalEngine.Polygon:
+                    for i in range(len(ground.collider.component.dotList)):
+                        dot1 = ground.collider.component.dotList[i-1]
+                        dot2 = ground.collider.component.dotList[i]
+                        dot1[0] = round(dot1[0])
+                        dot2[0] = round(dot2[0])
+                        dot1[1] = round(dot1[1])
+                        dot2[1] = round(dot2[1])
+                        pygame.draw.line(screen, BLACK, handleY(dot1), handleY(dot2), 1)
+                else:
+                    centerDot = ground.collider.component.centerDot
+                    centerDot[0] = round(centerDot[0])
+                    centerDot[1] = round(centerDot[1])
+                    pygame.draw.circle(screen, BLACK, handleY(centerDot), ground.collider.component.radius, 1)
+
+        for obj in characterObjList:
+            if obj.collider:
+                if type(obj.collider.component) is PhysicalEngine.Polygon:
+                    for i in range(len(obj.collider.component.dotList)):
+                        dot1 = obj.collider.component.dotList[i-1]
+                        dot2 = obj.collider.component.dotList[i]
+                        dot1[0] = round(dot1[0])
+                        dot2[0] = round(dot2[0])
+                        dot1[1] = round(dot1[1])
+                        dot2[1] = round(dot2[1])
+                        pygame.draw.line(screen, BLACK, handleY(dot1), handleY(dot2), 1)
+                else:
+                    centerDot = list(obj.collider.component.centerDot)
+                    centerDot[0] = int(round(centerDot[0]))
+                    centerDot[1] = int(round(centerDot[1]))
+                    pygame.draw.circle(screen, BLACK, handleY(centerDot), obj.collider.component.radius, 1)
+        #========For debug. draw collider===============================================
+        #========For debug, draw Trigger================================================
+        for obj in characterObjList:
+            if obj.trigger:
+                if type(obj.trigger.component) is PhysicalEngine.Polygon:
+                    for i in range(len(obj.trigger.component.dotList)):
+                        dot1 = obj.trigger.component.dotList[i-1]
+                        dot2 = obj.trigger.component.dotList[i]
+                        dot1[0] = round(dot1[0])
+                        dot2[0] = round(dot2[0])
+                        dot1[1] = round(dot1[1])
+                        dot2[1] = round(dot2[1])
+                        pygame.draw.line(screen, (255, 0, 0), handleY(dot1), handleY(dot2), 1)
+                else:
+                    centerDot = list(obj.trigger.component.centerDot)
+                    centerDot[0] = int(round(centerDot[0]))
+                    centerDot[1] = int(round(centerDot[1]))
+                    pygame.draw.circle(screen, (255, 0, 0), handleY(centerDot), obj.trigger.component.radius, 1)
+        #========For debug, draw Trigger================================================
         nowFps = 1.0/(time.time()-startTime)
         screen.blit(font.render(f'FPS: {round(nowFps)}', True, BLACK), (SCREEN_SIZE[0]-200, 0))
         if nowFps <60:
             screen.blit(font.render('BAD FPS!', True, BLACK), (SCREEN_SIZE[0]-100, 0))
         pygame.display.flip()
+        print(player.coordinate[0]-player.collider.component.dotList[0][0])
 
 pygame.quit()

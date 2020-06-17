@@ -98,13 +98,13 @@ class MoveSystem:
             expression = np.array([[math.cos(angle), -math.sin(angle)],[math.sin(angle), math.cos(angle)]])
         
         centeroidDot = False
-        if self.target.collider and type(self.target.collider) is PhysicalEngine.Polygon:
+        if self.target.collider and type(self.target.collider.component) is PhysicalEngine.Polygon:
             centeroidDot = ((self.target.collider.AABB.minX + self.target.collider.AABB.maxX)/2, (self.target.collider.AABB.minY + self.target.collider.AABB.maxY)/2) 
             for i in range(len(self.target.collider.component.dotList)):
                 self.target.collider.component.dotList[i] = np.dot(expression, (self.target.collider.component.dotList[i]-centeroidDot).T) + centeroidDot
                 
             self.target.collider.makingAABB()
-        if self.target.trigger and type(self.target.trigger) is PhysicalEngine.Polygon:
+        if self.target.trigger and type(self.target.trigger.component) is PhysicalEngine.Polygon:
             if not centeroidDot:
                 centeroidDot = ((self.target.trigger.AABB.minX + self.target.trigger.AABB.maxX)/2, (self.target.trigger.AABB.minY + self.target.trigger.AABB.maxY)/2)
             for i in range(len(self.target.trigger.component.dotList)):
@@ -119,10 +119,10 @@ class MoveSystem:
         self.speedX *= self.friction
         self.speedY *= self.airResistance
 
-        expression = np.array([self.speedX, self.speedY])
+        expression = np.array([self.speedX, self.speedY], dtype=np.float)
         self.target.coordinate += expression
         if self.target.collider:
-            if type(self.target.collider) is PhysicalEngine.Polygon:
+            if type(self.target.collider.component) is PhysicalEngine.Polygon:
                 for i in range(len(self.target.collider.component.dotList)):
                     self.target.collider.component.dotList[i] += expression
             else:
@@ -130,7 +130,7 @@ class MoveSystem:
             self.target.collider.makingAABB()
             
         if self.target.trigger:
-            if type(self.target.trigger) is PhysicalEngine.Polygon:
+            if type(self.target.trigger.component) is PhysicalEngine.Polygon:
                 for i in range(len(self.target.trigger.component.dotList)):
                     self.target.trigger.component.dotList[i] += expression
             else:
