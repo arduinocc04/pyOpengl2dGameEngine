@@ -29,8 +29,8 @@ while not done:
         
     if show:    
         mouseX, mouseY = pygame.mouse.get_pos()
-        pygame.draw.rect(screen, BLACK, (mouseX, mouseY, FONT_SIZE*len(script), (len(script)//20 + 1)*FONT_SIZE))
-        pygame.draw.polygon(screen, BLACK, [[(mouseX+FONT_SIZE*len(script)//5)//2 - 5, mouseY+(len(script)//20 + 1)*FONT_SIZE], [(mouseX+FONT_SIZE*len(script)//5)//2, mouseY+(len(script)//20 + 1)*FONT_SIZE + 5], [(mouseX+FONT_SIZE*len(script)//5)//2 + 5, mouseY+(len(script)//20 + 1)*FONT_SIZE]])
+        pygame.draw.rect(screen, BLACK, (mouseX, mouseY, FONT_SIZE*len(script), (len(script)//20 + 1)*(FONT_SIZE+5)))
+        pygame.draw.polygon(screen, BLACK, [[(mouseX+FONT_SIZE*len(script)//5) - 5, mouseY+(len(script)//20 + 1)*FONT_SIZE+5], [(mouseX+FONT_SIZE*len(script)//5), mouseY+(len(script)//20 + 1)*FONT_SIZE + 10], [(mouseX+FONT_SIZE*len(script)//5) + 5, mouseY+(len(script)//20 + 1)*FONT_SIZE+5]])
         screen.blit(font.render(script, True, WHITE), (mouseX, mouseY))
     
     nowFps = 1/(time.time() - startTime)
