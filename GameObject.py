@@ -7,6 +7,7 @@ class Actor:
         self.type = False
         self.collider = False
         self.colliderSetting = 'n'#n->None, g->ground, c->character. usage: 'n' or 'gc' or 'cg' or 'g' 'c'
+        self.allowCharacterColliding = False # if obj collided with obj whose colllidersetting = 'c' or 'gc', if allow... == True-> call collided(), False-> not collided.
 
         self.renderer = False
         self.soundSystem = False

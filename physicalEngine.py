@@ -111,7 +111,7 @@ class Collision:
             return False
         return True
 
-    def isDotInPolygon(self, dot1, polygon1):#오른쪽으로 반직선 그어서 교점이 홀수면 내부, 짝수면 외부에 점이 존재한다는 알고리즘 사용.
+    def isDotInPolygon(self, dot1, polygon1:Polygon):#오른쪽으로 반직선 그어서 교점이 홀수면 내부, 짝수면 외부에 점이 존재한다는 알고리즘 사용.
         dotLine = Line(dot1, (dot1[0]+10000, dot1[1]))
         meetCount = 0
 
@@ -180,24 +180,20 @@ class Collision:
         return ((circle1.radius + circle2.radius)**2>centerDotDistanceSquared)
 
     def PolyvsCircle(self, polygon1:Polygon, circle1:Circle):
-        for dot in polygon1.dotList:
-            if self.getDotvsDotDistanceSquared(dot, circle1.centerDot) < circle1.radius**2:
+        for i in range(len(polygon1.dotList)):
+            polygonLine = Line(polygon1.dotList[i-1], polygon1.dotList[i])
+            if self.getLinevsDotDistance(polygonLine, circle1.centerDot) < circle1.radius:
                 return True
         return False
 
     def ActorvsActor(self, actor1Component, actor2Component):
         if type(actor1Component) is Circle:
             if type(actor2Component) is Circle:
-                if self.CirclevsCircle(actor1Component, actor2Component):
-                    return True
+                return self.CirclevsCircle(actor1Component, actor2Component)
             else:
-                if self.PolyvsCircle(actor2Component, actor1Component):
-                    return True
+                return self.PolyvsCircle(actor2Component, actor1Component)
         else:
             if type(actor2Component) is Circle:
-                if self.PolyvsCircle(actor1Component, actor2Component):
-                    return True
+                return self.PolyvsCircle(actor1Component, actor2Component)
             else:
-                if self.PolyvsPoly(actor1Component, actor2Component):
-                    return True
-        return False
+                return self.PolyvsPoly(actor1Component, actor2Component)
