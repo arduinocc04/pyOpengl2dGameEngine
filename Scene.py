@@ -9,7 +9,7 @@ characterObjList[0]이 무조건 Player
 좌표는 무조건 []로 입력. !tuple
 '''
 class Scene:
-    def __init__(self, screen, SCREEN_SIZE, FPS, doDebug=False):
+    def __init__(self, screen, SCREEN_SIZE, FPS, debugLevel = 1):
         pygame.init()
         self.groundObjList = []
         self.characterObjList = []
@@ -25,7 +25,8 @@ class Scene:
         self.WHITE = (255, 255, 255)
         self.RED = (255, 0, 0)
         self.BLUE = (0, 0, 255)
-        self.doDebug = doDebug
+        self.VIOLET = (128, 116, 206)
+        self.debugLevel = debugLevel
     
     def addGroundObj(self, groundObj):
         self.groundObjList.append(groundObj)
@@ -99,6 +100,11 @@ class Scene:
             if ground.renderer:
                 a = self.handleY(ground.coordinate)
                 ground.renderer.render(self.screen,(a[0], a[1]))#-player.coordinate[0], a[1]))
+
+    def renderPlayerConnectedLine(self):
+        dot1 = (1000, 500)
+        dot2 = self.characterObjList[0].coordinate
+        pygame.draw.line(self.screen, self.VIOLET, self.handleY(dot1), self.handleY(dot2), 1)
                                             
     def main(self):
         self.callUpdate()
@@ -106,7 +112,10 @@ class Scene:
         self.triggerCollisionCheck()
         self.renderCharacter()
         self.renderGround()
-        if self.doDebug:
+        if self.debugLevel == 1:
+            self.renderPlayerConnectedLine()
+        elif self.debugLevel == 2:
+            self.renderPlayerConnectedLine()
             self.debug()
 
     def loop(self):
@@ -149,7 +158,7 @@ class Scene:
         
         pygame.quit()
 
-    def debug(self):
+    def renderOutLine(self):
         #========For debug. draw collider===============================================
         for ground in self.groundObjList:
             if ground.collider:

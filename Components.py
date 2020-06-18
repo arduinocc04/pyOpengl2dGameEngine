@@ -149,7 +149,7 @@ class RigidPhysicsSystem:
     def groundUp(self):
         self.targetMover.speedY = 0
         self.targetMover.moveYByAccel(0.3)
-        self.targetMover.idle()
+        #self.targetMover.idle()
 
 class EventSystem:
     '''may be use for custom event'''

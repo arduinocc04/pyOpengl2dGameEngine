@@ -17,9 +17,9 @@ class TestActor(GameObject.Actor):
         self.renderer.setImage('testSource/player.png')
         self.renderer.setImgSize(40, 40)
         
-        self.soundSystem = Components.SoundSystem('testSource/ballade4.ogg')
-        self.soundSystem.diminishVolumePercentPer100px = 0.2
-        self.soundSystem.playSound(-1)
+        #self.soundSystem = Components.SoundSystem('testSource/ballade4.ogg')
+       # self.soundSystem.diminishVolumePercentPer100px = 0.2
+       # self.soundSystem.playSound(-1)
 
         self.healthSystem = Components.HealthSystem(500, 500)
 
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     def handleY(dot):
         return dot[0], SCREEN_SIZE[1]-dot[1]
 
-    scene = Scene.Scene(screen, SCREEN_SIZE, FPS, True)
+    scene = Scene.Scene(screen, SCREEN_SIZE, FPS)
     scene.addCharacterObj(TestActor(handleY([1,100])))
     scene.addCharacterObj(TestActor1(handleY([100, 100])))
     for i in range(40):
@@ -102,5 +102,4 @@ if __name__ == "__main__":
 
     scene.loop()
 
-    pygame.quit()
     

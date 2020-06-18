@@ -171,7 +171,7 @@ class Collision:
             if self.PolyvsPoly(polygon2, polygon1, reversed=True):
                 return True
 
-        if len(self.getPolyDotInOtherPoly(polygon2, polygon1.AABB)):
+        if len(self.getPolyDotInOtherPoly(polygon2, polygon1)):
             return True
         return False
 
