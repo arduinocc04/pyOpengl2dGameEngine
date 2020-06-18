@@ -33,6 +33,10 @@ while not done:
         pygame.draw.polygon(screen, BLACK, [[(mouseX+FONT_SIZE*len(script)//5) - 5, mouseY+(len(script)//20 + 1)*FONT_SIZE+5], [(mouseX+FONT_SIZE*len(script)//5), mouseY+(len(script)//20 + 1)*FONT_SIZE + 10], [(mouseX+FONT_SIZE*len(script)//5) + 5, mouseY+(len(script)//20 + 1)*FONT_SIZE+5]])
         screen.blit(font.render(script, True, WHITE), (mouseX, mouseY))
     
-    nowFps = 1/(time.time() - startTime)
+    a = time.time()-startTime
+    if a:
+        nowFps = 1/(a)
+    else:
+        nowFps = 999
     screen.blit(font.render(f'FPS: {round(nowFps)}', True, BLACK), (SCREEN_SIZE[0]-100, 0))
     pygame.display.flip()
