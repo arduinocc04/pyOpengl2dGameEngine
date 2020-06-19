@@ -26,7 +26,10 @@ class Scene:
         self.RED = (255, 0, 0)
         self.BLUE = (0, 0, 255)
         self.VIOLET = (128, 116, 206)
+        self.AQUA = (0, 255, 255)
         self.debugLevel = debugLevel
+        if debugLevel >=2:
+            self.rays = []
     
     def addGroundObj(self, groundObj):
         self.groundObjList.append(groundObj)
@@ -87,7 +90,36 @@ class Scene:
                                     else:
                                         if self.collision.ActorvsActor(obj.collider.component, otherObj.collider.component):
                                             obj.triggerCollided(otherObj) 
-                                            
+
+    def rayCast(self, obj):
+        if self.debugLevel > 1:
+            self.rays.append([obj.rayCastSystem.ray.dotList, time.time()])
+        hitObjects = []
+        for otherObj in self.characterObjList:
+            if otherObj.collider and otherObj != obj:
+                if type(otherObj.collider.component) is PhysicalEngine.Polygon:
+                    for i in range(len(otherObj.collider.component.dotList)):
+                        polyLine = PhysicalEngine.Line(otherObj.collider.component.dotList[i-1], otherObj.collider.component.dotList[i])
+                        if self.collision.lineSegmentvsLineSegment(polyLine, obj.rayCastSystem.ray):
+                            hitObjects.append(otherObj)
+                            break
+                else:
+                    if self.collision.lineSegmentvsCircle(obj.rayCastSystem.ray, otherObj.collider.component):
+                        hitObjects.append(otherObj)
+        for ground in self.groundObjList:
+            if ground.collider:
+                if type(ground.collider.component) is PhysicalEngine.Polygon:
+                    for i in range(len(ground.collider.component.dotList)):
+                        polyLine = PhysicalEngine.Line(ground.collider.component.dotList[i-1], ground.collider.component.dotList[i])
+                        if self.collision.lineSegmentvsLineSegment(polyLine, obj.rayCastSystem.ray):
+                            hitObjects.append(ground)
+                            break
+                else:
+                    if self.collision.lineSegmentvsCircle(obj.rayCastSystem.ray, ground.collider.component):
+                        hitObjects.append(ground)
+        obj.rayHit(hitObjects)
+        obj.rayCastSystem.deleteRay()
+
     def renderCharacter(self):
         for character in self.characterObjList:#render character.(test)
             if character.renderer:# and character != player:
@@ -112,11 +144,12 @@ class Scene:
         self.triggerCollisionCheck()
         self.renderCharacter()
         self.renderGround()
-        if self.debugLevel == 1:
+        if self.debugLevel > 0:
             self.renderPlayerConnectedLine()
-        elif self.debugLevel == 2:
-            self.renderPlayerConnectedLine()
-            self.debug()
+        if self.debugLevel > 1:
+            self.renderRay()
+        if self.debugLevel > 2:
+            self.renderOutLine()
 
     def loop(self):
         done = False
@@ -139,6 +172,8 @@ class Scene:
                         self.characterObjList[0].mover.moveYByAccel(10)
                     if event.key == pygame.K_DOWN:
                         self.characterObjList[0].mover.moveYByAccel(-10)
+                    if event.key == pygame.K_a:
+                        self.characterObjList[0].rayCastSystem.shootRayByDot(self.characterObjList[0].coordinate, (self.characterObjList[0].coordinate[0] + 300, self.characterObjList[0].coordinate[1]-300))
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT:
                         keys[0] = False
@@ -235,3 +270,12 @@ class Scene:
                     pygame.draw.line(self.screen, self.GREEN, self.handleY(dot1), self.handleY(dot2), 1)
         #========For debug, draw AABB================================================
         
+    def renderRay(self):
+        delList = []
+        for i in range(len(self.rays)):
+            pygame.draw.line(self.screen, self.AQUA, self.handleY((round(self.rays[i][0][0][0]), round(self.rays[i][0][0][1]))), self.handleY((round(self.rays[i][0][1][0]), round(self.rays[i][0][1][1]))), 2)
+            if time.time() - self.rays[i][1] > 1:
+                delList.append(i)
+
+        for i in range(len(delList)):
+            del self.rays[delList[i] - i]

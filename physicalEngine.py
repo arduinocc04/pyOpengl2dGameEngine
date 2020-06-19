@@ -48,6 +48,8 @@ class Line:
             self.slope = None
         else:
             self.slope = (lineDot1[1]-lineDot2[1])/a
+            if self.slope == -0:
+                self.slope = 0
         if self.slope == None:
             self.xIntercept = lineDot1[0]
         else:
@@ -67,24 +69,55 @@ class Collision:
         b = line1.dotList[0][1]-line1.dotList[1][1]
         return abs(a*dot1[1] - b*dot1[0] + line1.dotList[1][0]*b - line1.dotList[1][1]*a)/(math.sqrt(a**2 + b**2))#점과 직선사이 공식.
 
-    def LineSegmentvsLineSegment(self, line1:Line, line2:Line):
-        if line1.slope == line2.slope:
+    def lineSegmentvsLineSegment(self, line1:Line, line2:Line):
+        line1Slope = line1.slope
+        line2Slope = line2.slope
+        if line1Slope == line2Slope:
             return False
-        if line1.slope == None:
-            meet = [line1.xIntercept, line2.slope*line1.xIntercept + line2.yIntercept]
-            line1.slope = 99999999999#x축에 수직인 그래프의 기울기.(대충 큰값 넣은것.)
-        elif line2.slope == None:
-            meet = [line2.xIntercept, line1.slope*line2.xIntercept + line1.yIntercept]
-            line2.slope = 99999999999
+        if line1Slope == None:
+            meet = [line1.xIntercept, line2Slope*line1.xIntercept + line2.yIntercept]
+            line1Slope = 99999999999#x축에 수직인 그래프의 기울기.(대충 큰값 넣은것.)
+        elif line2Slope == None:
+            meet = [line2.xIntercept, line1Slope*line2.xIntercept + line1.yIntercept]
+            line2Slope = 99999999999
         else:
-            meet = [(line2.yIntercept-line1.yIntercept)/(line1.slope-line2.slope), line1.slope*(line2.yIntercept-line1.yIntercept)/(line1.slope-line2.slope) +line1.yIntercept]
-        if abs(line1.slope)<abs(line2.slope):#더 완만한 기울기의 선분 고르기.
+            meet = [(line2.yIntercept-line1.yIntercept)/(line1Slope-line2Slope), line1Slope*(line2.yIntercept-line1.yIntercept)/(line1Slope-line2Slope) +line1.yIntercept]
+        if abs(line1Slope)<abs(line2Slope):#더 완만한 기울기의 선분 고르기.
             if(line1.dotList[1][0]-meet[0])*(line1.dotList[0][0]-meet[0])>0 or (line2.dotList[0][1]-meet[1])*(line2.dotList[1][1]-meet[1])>0:
                 return False
         else:
             if(line2.dotList[1][0]-meet[0])*(line2.dotList[0][0]-meet[0])>0 or (line1.dotList[0][1]-meet[1])*(line1.dotList[1][1]-meet[1])>0:
                 return False
         return True
+
+    def lineSegmentvsCircle(self, line1:Line, circle1:Circle):
+        print('line1.slope: ', line1.slope)
+        if line1.slope != None:
+            m = line1.slope
+            n = line1.yIntercept
+            a = circle1.centerDot[0]
+            b = circle1.centerDot[1]
+            r = circle1.radius
+            c = m*(n-b) - a
+            d = c**2 - (1 + m**2)*(a**2 - r**2 + (n - b)**2)
+            print(f'D/4 = {d}')
+            if d <= 0:
+                return False
+            d = math.sqrt(d)
+            x1, x2 = (d - c)/(m**2 + 1), -(d + c)/(m**2 + 1)
+            print(f'x1:{x1}, x2:{x2}')
+            if (line1.dotList[0][0] - x1)*(line1.dotList[1][0] - x1) < 0 or (line1.dotList[0][0] - x2)*(line1.dotList[1][0] - x2) < 0:
+                return True
+            return False
+        else:
+            d = circle1.radius**2 - (circle1.centerDot[0] - line1.xIntercept)**2
+            if d <= 0:
+                return False
+            d = math.sqrt(d)
+            y1, y2 = circle1.centerDot[1] + d, circle1.centerDot[1] + d
+            if (line1.dotList[0][1] - y1)*(line1.dotList[1][1] - y1) < 0 or (line1.dotList[0][1] - y2)*(line1.dotList[1][1] - y2) <0:
+                return True
+            return False
         
     def getPolyDotInOtherPoly(self, sourcePoly, backGroundPoly):
         polyIndexList = []
@@ -117,13 +150,13 @@ class Collision:
 
         for i in range(len(polygon1.dotList)):
             polygonLine = Line(polygon1.dotList[i-1], polygon1.dotList[i])
-            if self.LineSegmentvsLineSegment(dotLine, polygonLine):
+            if self.lineSegmentvsLineSegment(dotLine, polygonLine):
                 meetCount += 1
         if meetCount%2 == 1:
             return True
 
         return False
-        
+
     def PolyvsPoly(self, polygon1:Polygon, polygon2:Polygon, reversed= False):
         if not(reversed):#거꾸로 먼저하고, 이미 겹쳐있다고 판단하면, 그냥 true return.
             if self.PolyvsPoly(polygon2, polygon1, reversed=True):

@@ -18,6 +18,8 @@ class Actor:
 
         self.coordinate = np.array([float(coordinate[0]), float(coordinate[1])])
         self.angle = 0
+
+        self.rayCastSystem = False
     
     def update(self):
         pass
@@ -26,6 +28,8 @@ class Actor:
     def collided(self, collidedObj):
         pass
     def triggerCollided(self, collidedObj):
+        pass
+    def rayHit(self, objs):
         pass
 
 

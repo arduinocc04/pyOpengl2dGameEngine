@@ -32,14 +32,20 @@ class TestActor(GameObject.Actor):
         self.triggerSetting = 'c'
 
         self.rigidPhysicsSystem = Components.RigidPhysicsSystem(self.mover)
+
+        self.rayCastSystem = Components.RayCastSystem(scene, self)
     
     def collided(self, otherObj):
         if otherObj.type:#ground->type = True, Actor->type = False
             self.rigidPhysicsSystem.groundUp()
+
     def update(self):
         self.rigidPhysicsSystem.gravity(-0.1)
         self.mover.idle()
         #self.soundSystem.diminishVolumeByDistance()
+
+    def rayHit(self, hitObjs):
+        print(hitObjs)
 
 class TestActor1(GameObject.Actor):
     def __init__(self, coordinate):
@@ -95,7 +101,7 @@ if __name__ == "__main__":
     def handleY(dot):
         return dot[0], SCREEN_SIZE[1]-dot[1]
 
-    scene = Scene.Scene(screen, SCREEN_SIZE, FPS)
+    scene = Scene.Scene(screen, SCREEN_SIZE, FPS, 1)
     scene.addCharacterObj(TestActor(handleY([1,100])))
     scene.addCharacterObj(TestActor1(handleY([100, 100])))
     for i in range(40):

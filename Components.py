@@ -263,3 +263,20 @@ class Collider:
                 yList.append(dot[1])
 
             self.AABB = PhysicalEngine.AABB((min(xList), min(yList)), (max(xList), max(yList)))
+
+class RayCastSystem:
+    def __init__(self, scene, myself):
+        """
+        myself must be self
+        """
+        self.collision = PhysicalEngine.Collision()
+        self.ray = None
+        self.scene = scene
+        self.me = myself
+
+    def shootRayByDot(self, startDot, endDot):
+        self.ray = PhysicalEngine.Line(startDot, endDot)
+        self.scene.rayCast(self.me)
+
+    def deleteRay(self):
+        self.ray = None
