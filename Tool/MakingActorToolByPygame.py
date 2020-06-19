@@ -268,13 +268,14 @@ while not done:
                 if event.key == pygame.K_f:
                     mode = 'EXTRACT'
                 if event.key == pygame.K_y:
-                    nowShape = Poly()
-                    nowShape.appendNewDot(actorCoordinate)
-                    nowShape.appendNewDot((actorCoordinate[0], actorCoordinate[1]-imageHeight))
-                    nowShape.appendNewDot((actorCoordinate[0]+imageWidth, actorCoordinate[1]-imageHeight))
-                    nowShape.appendNewDot((actorCoordinate[0]+imageWidth, actorCoordinate[1]))
-                    shapeList.append(nowShape)
-                    mode = 'QUIT'
+                    if needRenderer:
+                        nowShape = Poly()
+                        nowShape.appendNewDot(actorCoordinate)
+                        nowShape.appendNewDot((actorCoordinate[0], actorCoordinate[1]-imageHeight))
+                        nowShape.appendNewDot((actorCoordinate[0]+imageWidth, actorCoordinate[1]-imageHeight))
+                        nowShape.appendNewDot((actorCoordinate[0]+imageWidth, actorCoordinate[1]))
+                        shapeList.append(nowShape)
+                        mode = 'QUIT'
                 if event.key == pygame.K_h:
                     showHelper = not(showHelper)
                 if event.key == pygame.K_v:

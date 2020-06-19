@@ -123,49 +123,7 @@ class Collision:
             return True
 
         return False
-
-    def RightTurn(self,p1, p2, p3):
-	    if (p3[1]-p1[1])*(p2[0]-p1[0]) >= (p2[1]-p1[1])*(p3[0]-p1[0]):
-	    	return False
-	    return True
-
-    def GrahamScan(self,P):
-	    #P.sort(key=lambda dot: dot[1])			# Sort the set of points
-	    L_upper = [P[0], P[1]]		# Initialize upper part
-	    # Compute the upper part of the hull
-	    for i in range(2,len(P)):
-	    	L_upper.append(P[i])
-	    	while len(L_upper) > 2 and not self.RightTurn(L_upper[-1],L_upper[-2],L_upper[-3]):
-	    		del L_upper[-2]
-	    L_lower = [P[-1], P[-2]]	# Initialize the lower part
-	    # Compute the lower part of the hull
-	    for i in range(len(P)-3,-1,-1):
-	    	L_lower.append(P[i])
-	    	while len(L_lower) > 2 and not self.RightTurn(L_lower[-1],L_lower[-2],L_lower[-3]):
-	    		del L_lower[-2]
-	    del L_lower[0]
-	    del L_lower[-1]
-	    L = L_upper + L_lower		# Build the full hull
-	    return L
-    '''
-    def PolyvsPoly(self, polygon1:Polygon, polygon2:Polygon, reversed= False):
-        if not(reversed):#거꾸로 먼저하고, 이미 겹쳐있다고 판단하면, 그냥 true return.
-            if self.PolyvsPoly(polygon2, polygon1, reversed=True):
-                return True
-
-        polygon2PointsInPolygon1AABBIndex = self.getPolyDotInOtherPoly(polygon2, polygon1.AABB)
-        if polygon2PointsInPolygon1AABBIndex == []:
-            return False
-
-        points = deepcopy(polygon1.dotList)
-        for i in polygon2PointsInPolygon1AABBIndex:
-            points.append(polygon2.dotList[i])
-
-        points = self.GrahamScan(points)
-        if len(points) != len(polygon1.dotList): 
-            return False
-        return True
-    '''
+        
     def PolyvsPoly(self, polygon1:Polygon, polygon2:Polygon, reversed= False):
         if not(reversed):#거꾸로 먼저하고, 이미 겹쳐있다고 판단하면, 그냥 true return.
             if self.PolyvsPoly(polygon2, polygon1, reversed=True):

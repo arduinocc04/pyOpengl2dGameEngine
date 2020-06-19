@@ -170,6 +170,7 @@ class SoundSystem:
         self.diminishVolumePercentPer100px = 0
         self.volume = 1
         self.clip = pygame.mixer.Sound(fileName)#should be ogg or wav
+        self.diminshMode = 1
 
     def playSound(self, wait):
         self.clip.play(wait)
@@ -179,6 +180,15 @@ class SoundSystem:
 
     def setVolumeByDistance(self, distance):
         self.clip.set_volume(1-math.log10(distance)*self.diminishVolumePercentPer100px)
+        
+    def diminishVolumeByDistance(self, distance):
+        if self.diminshMode == 1: #linear
+            self.clip.set_volume(1 - distance*self.diminishVolumePercentPer100px/100)
+        elif self.diminshMode == 2: #log10
+            self.clip.set_volume(1 - math.log10(distance)*self.diminishVolumePercentPer100px/100)
+        elif self.diminshMode == 3: #**
+            self.clip.set_volume(1 - (distance*self.diminishVolumePercentPer100px/100)**2 )
+            
 
     def loopSound(self, loopTime):
         self.loopCount += 1

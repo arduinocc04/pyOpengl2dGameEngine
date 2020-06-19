@@ -39,6 +39,7 @@ class TestActor(GameObject.Actor):
     def update(self):
         self.rigidPhysicsSystem.gravity(-0.1)
         self.mover.idle()
+        #self.soundSystem.diminishVolumeByDistance()
 
 class TestActor1(GameObject.Actor):
     def __init__(self, coordinate):
