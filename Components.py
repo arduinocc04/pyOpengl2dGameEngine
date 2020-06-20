@@ -4,8 +4,7 @@ import time
 import PhysicalEngine
 import pygame
 SCREEN_SIZE = (1920, 1080)
-def dotToScreenDot(dot):
-    return dot[0], SCREEN_SIZE[1]-dot[1]
+
 class RenderSystem:
     '''show image on actor's coordinate'''
     def __init__(self, target):
@@ -22,6 +21,43 @@ class TalkSystem:
     '''script.'''
     def __init__(self):
         pass
+
+class SaySystem:
+    def __init__(self, fontName, fontSize, screen, myself):
+        """
+        myself must be self
+        """
+        self.font = pygame.font.SysFont(fontName, fontSize)
+        self.FONT_SIZE = fontSize
+        self.screen = screen
+        self.BLACK = (0, 0, 0)
+        self.WHITE = (255, 255, 255)
+        self.startTime = 0
+        self.timeOut = 0
+        self.string = ''
+        self.myself = myself
+
+    def handleY(self, dot):
+        return dot[0], SCREEN_SIZE[1]-dot[1]
+
+    def say(self, string, timeOut):
+        """
+        if time is -1: say forever
+        """
+        self.string = string
+        self.timeOut = timeOut
+        self.startTime = time.time()
+
+    def idle(self):
+        if self.timeOut < 0 or time.time() - self.startTime < self.timeOut:
+            coordinate = self.handleY(self.myself.coordinate)
+            a = len(self.string)//20 + 1
+            b = coordinate[0]+self.FONT_SIZE*len(self.string)//5
+            c = coordinate[1]+a*self.FONT_SIZE
+            pygame.draw.rect(self.screen, self.BLACK, (coordinate[0], coordinate[1] - a*(self.FONT_SIZE + 5) - 5, self.FONT_SIZE*len(self.string), a*(self.FONT_SIZE + 5)))
+            pygame.draw.polygon(self.screen, self.BLACK, [[b - 5, c - a*(self.FONT_SIZE + 5)], [b, c - a*(self.FONT_SIZE + 5) + 5], [b + 5, c - a*(self.FONT_SIZE + 5)]])
+            self.screen.blit(self.font.render(self.string, True, self.WHITE), (coordinate[0], coordinate[1] - a*(self.FONT_SIZE + 5) - 5))
+        
 
 class HealthSystem:
     '''health system. it can damage, kill other, and heal self'''
@@ -150,17 +186,6 @@ class RigidPhysicsSystem:
         self.targetMover.speedY = 0
         self.targetMover.moveYByAccel(0.3)
         #self.targetMover.idle()
-
-class EventSystem:
-    '''may be use for custom event'''
-    def __init__(self):
-        pass
-
-    def sendEvt(self):
-        pass
-
-    def getEvt(self):
-        pass
 
 class SoundSystem:
     '''sound system. it can use for bgm or sound effect'''

@@ -34,6 +34,8 @@ class TestActor(GameObject.Actor):
         self.rigidPhysicsSystem = Components.RigidPhysicsSystem(self.mover)
 
         self.rayCastSystem = Components.RayCastSystem(scene, self)
+
+        self.saySystem = Components.SaySystem('malgungothic', 20, screen, self)
     
     def collided(self, otherObj):
         if otherObj.type:#ground->type = True, Actor->type = False
@@ -42,6 +44,7 @@ class TestActor(GameObject.Actor):
     def update(self):
         self.rigidPhysicsSystem.gravity(-0.1)
         self.mover.idle()
+        self.saySystem.idle()
         #self.soundSystem.diminishVolumeByDistance()
 
     def rayHit(self, hitObjs):

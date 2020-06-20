@@ -174,6 +174,8 @@ class Scene:
                         self.characterObjList[0].mover.moveYByAccel(-10)
                     if event.key == pygame.K_a:
                         self.characterObjList[0].rayCastSystem.shootRayByDot(self.characterObjList[0].coordinate, (self.characterObjList[0].coordinate[0] + 300, self.characterObjList[0].coordinate[1]-300))
+                    if event.key == pygame.K_d:
+                        self.characterObjList[0].saySystem.say('Hi!', -1)
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT:
                         keys[0] = False
