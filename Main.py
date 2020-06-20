@@ -90,17 +90,10 @@ class TestGround(GameObject.Ground):
         self.mover.idle()
 
 if __name__ == "__main__":
-    
     FPS = 60
     SCREEN_SIZE = (1920, 1080)
     screen = pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN)
-    BLACK = (0, 0, 0)
-    WHITE = (255, 255, 255)
-    keys = [False, False]#leftGoKey, RightGoKey
     pygame.init()
-    FONT = 'malgungothic'
-    font = pygame.font.SysFont(FONT, 20)
-
     def handleY(dot):
         return dot[0], SCREEN_SIZE[1]-dot[1]
 
