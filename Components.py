@@ -9,12 +9,21 @@ class RenderSystem:
     '''show image on actor's coordinate'''
     def __init__(self, target):
         self.target = target
+
     def setImage(self, image):
-        self.image = pygame.image.load(image).convert_alpha()
+        self.image_basic = pygame.image.load(image).convert_alpha()
+
     def setImgSize(self, width, height):
-        self.image = pygame.transform.scale(self.image, (width, height))
+        self.image_basic = pygame.transform.scale(self.image_basic, (width, height))
+        self.image = self.image_basic
+
+    def rotate(self, angle):
+        self.image = pygame.transform.rotate(self.image_basic, angle)
+
     def render(self, screen, coordinate):
-        screen.blit(self.image, coordinate)
+        xCorrection = self.image_basic.get_width()/2 - self.image.get_width()/2 
+        yCorrection = self.image_basic.get_height()/2 - self.image.get_height()/2 
+        screen.blit(self.image, (coordinate[0] + xCorrection, coordinate[1] + yCorrection))
         #self.target.coordinate 에 render
 
 class TalkSystem:
@@ -98,11 +107,11 @@ class HealthSystem:
 
 class MoveSystem:
     '''move system. move target coordinate and collider'''
-    def __init__(self, target):
+    def __init__(self, myself):
         '''target must be self(actor's self)'''
         self.speedX = 0
         self.speedY = 0
-        self.target = target
+        self.target = myself
         self.angle = 0
         self.friction = 1
         self.airResistance = 1
@@ -146,6 +155,9 @@ class MoveSystem:
             for i in range(len(self.target.trigger.component.dotList)):
                 self.target.collider.component.dotList[i] = np.dot(expression, (self.target.trigger.component.dotList[i]-centeroidDot).T) + centeroidDot
             self.target.trigger.makingAABB()
+
+        if self.target.renderer:
+            self.target.renderer.rotate(self.angle)
     
     def idle(self):
         if abs(self.speedX)<0.0001:

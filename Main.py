@@ -43,6 +43,7 @@ class TestActor(GameObject.Actor):
 
     def update(self):
         self.rigidPhysicsSystem.gravity(-0.1)
+        self.mover.rotate(10)
         self.mover.idle()
         self.saySystem.idle()
         #self.soundSystem.diminishVolumeByDistance()
@@ -97,7 +98,7 @@ if __name__ == "__main__":
     def handleY(dot):
         return dot[0], SCREEN_SIZE[1]-dot[1]
 
-    scene = Scene.Scene(screen, SCREEN_SIZE, FPS, 1)
+    scene = Scene.Scene(screen, SCREEN_SIZE, FPS, debugLevel=3)
     scene.addCharacterObj(TestActor(handleY([1,100])))
     scene.addCharacterObj(TestActor1(handleY([100, 100])))
     for i in range(40):

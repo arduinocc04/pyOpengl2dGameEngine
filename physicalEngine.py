@@ -73,6 +73,12 @@ class Collision:
         line1Slope = line1.slope
         line2Slope = line2.slope
         if line1Slope == line2Slope:
+            if line1Slope == None:
+                if line1.xIntercept == line2.xIntercept:
+                    return True
+            else:
+                if line1.yIntercept == line2.yIntercept:
+                    return True
             return False
         if line1Slope == None:
             meet = [line1.xIntercept, line2Slope*line1.xIntercept + line2.yIntercept]
@@ -114,7 +120,7 @@ class Collision:
             if d <= 0:
                 return False
             d = math.sqrt(d)
-            y1, y2 = circle1.centerDot[1] + d, circle1.centerDot[1] + d
+            y1, y2 = circle1.centerDot[1] + d, circle1.centerDot[1] - d
             if (line1.dotList[0][1] - y1)*(line1.dotList[1][1] - y1) < 0 or (line1.dotList[0][1] - y2)*(line1.dotList[1][1] - y2) <0:
                 return True
             return False
