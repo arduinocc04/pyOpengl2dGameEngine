@@ -4,12 +4,20 @@ import GameObject
 import Components
 import pygame
 from copy import deepcopy
+from Tool.Slider import Slider
 '''
 characterObjList[0]이 무조건 Player
 좌표는 무조건 []로 입력. !tuple
 '''
+BLACK = (0, 0, 0)
+GREEN = (0, 255, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+VIOLET = (128, 116, 206)
+AQUA = (0, 255, 255)
 class Scene:
-    def __init__(self, screen, SCREEN_SIZE, FPS, debugLevel = 1):
+    def __init__(self, screen, *, SCREEN_SIZE, FPS, debugLevel = 1):
         pygame.init()
         self.groundObjList = []
         self.characterObjList = []
@@ -20,13 +28,6 @@ class Scene:
         self.clock = pygame.time.Clock()
         self.screenAABB = PhysicalEngine.AABB([0,0], SCREEN_SIZE)
         self.font = pygame.font.SysFont('malgungothic', 20)
-        self.BLACK = (0, 0, 0)
-        self.GREEN = (0, 255, 0)
-        self.WHITE = (255, 255, 255)
-        self.RED = (255, 0, 0)
-        self.BLUE = (0, 0, 255)
-        self.VIOLET = (128, 116, 206)
-        self.AQUA = (0, 255, 255)
         self.debugLevel = debugLevel
         if debugLevel >=2:
             self.rays = []
@@ -136,8 +137,8 @@ class Scene:
     def renderPlayerConnectedLine(self):
         dot1 = (1000, 500)
         dot2 = self.characterObjList[0].coordinate
-        pygame.draw.line(self.screen, self.VIOLET, self.handleY(dot1), self.handleY(dot2), 1)
-                                            
+        pygame.draw.line(self.screen, VIOLET, self.handleY(dot1), self.handleY(dot2), 1)
+                            
     def main(self):
         self.callUpdate()
         self.colliderCollisionCheck()
@@ -154,10 +155,14 @@ class Scene:
     def loop(self):
         done = False
         keys = [False, False]
+        if self.debugLevel > 3:
+            clicked = False
+            fpsSlider = Slider(self.screen, lineStartDot=self.handleY((100, 1000)), width=200)
+        setFps = self.FPS
         while not done:
             startTime = time.time()
             self.clock.tick(self.FPS)
-            self.screen.fill(self.WHITE)
+            self.screen.fill(WHITE)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     done = True
@@ -181,16 +186,33 @@ class Scene:
                         keys[0] = False
                     if event.key == pygame.K_RIGHT:
                         keys[1] = False
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouseX, mouseY = pygame.mouse.get_pos()
+                    if fpsSlider.line[0][0] - fpsSlider.circleRad <= mouseX and fpsSlider.line[1][0] + fpsSlider.circleRad >= mouseX and fpsSlider.line[0][1] + fpsSlider.circleRad >= mouseY and fpsSlider.line[0][1] - fpsSlider.circleRad <= mouseY:
+                        clicked = True
+                if event.type == pygame.MOUSEBUTTONUP:
+                    clicked = False
 
             if keys[0]:# self.characterObjList[0] movement
                 self.characterObjList[0].mover.moveXByAccel(-0.5)
             if keys[1]:
                 self.characterObjList[0].mover.moveXByAccel(0.5)
+
+            if clicked:
+                mouseX, mouseY = pygame.mouse.get_pos()
+                fpsSlider.moveCircle((mouseX, mouseY))
+            if self.debugLevel > 3:
+                fpsSlider.render()
+                setFps = round(fpsSlider.getPercent()*100)
+                if setFps == 0:
+                    setFps = 1
+                self.screen.blit(self.font.render(f'SetFps: {setFps}', True, BLACK), (1000, 200))
+                self.FPS = setFps
             self.main()
             nowFps = 1/(time.time()-startTime)
-            self.screen.blit(self.font.render(f'FPS: {round(nowFps)}', True, self.BLACK), (self.SCREEN_SIZE[0]-200, 0))
-            if nowFps <60:
-                self.screen.blit(self.font.render('BAD FPS!', True, self.BLACK), (self.SCREEN_SIZE[0]-100, 0))
+            self.screen.blit(self.font.render(f'FPS: {round(nowFps)}', True, BLACK), (self.SCREEN_SIZE[0]-200, 0))
+            if abs(setFps - nowFps) > 5:
+                self.screen.blit(self.font.render('BAD FPS!', True, BLACK), (self.SCREEN_SIZE[0]-100, 0))
             pygame.display.flip()
         
         pygame.quit()
@@ -207,12 +229,12 @@ class Scene:
                         dot2[0] = round(dot2[0])
                         dot1[1] = round(dot1[1])
                         dot2[1] = round(dot2[1])
-                        pygame.draw.line(self.screen, self.BLACK, self.handleY(dot1), self.handleY(dot2), 1)
+                        pygame.draw.line(self.screen, BLACK, self.handleY(dot1), self.handleY(dot2), 1)
                 else:
                     centerDot = deepcopy(list(ground.collider.component.centerDot))
                     centerDot[0] = round(centerDot[0])
                     centerDot[1] = round(centerDot[1])
-                    pygame.draw.circle(self.screen, self.BLACK, self.handleY(centerDot), ground.collider.component.radius, 1)
+                    pygame.draw.circle(self.screen, BLACK, self.handleY(centerDot), ground.collider.component.radius, 1)
 
         for obj in self.characterObjList:
             if obj.collider:
@@ -224,12 +246,12 @@ class Scene:
                         dot2[0] = round(dot2[0])
                         dot1[1] = round(dot1[1])
                         dot2[1] = round(dot2[1])
-                        pygame.draw.line(self.screen, self.BLACK, self.handleY(dot1), self.handleY(dot2), 1)
+                        pygame.draw.line(self.screen, BLACK, self.handleY(dot1), self.handleY(dot2), 1)
                 else:
                     centerDot = deepcopy(list(obj.collider.component.centerDot))
                     centerDot[0] = int(round(centerDot[0]))
                     centerDot[1] = int(round(centerDot[1]))
-                    pygame.draw.circle(self.screen, self.BLACK, self.handleY(centerDot), obj.collider.component.radius, 1)
+                    pygame.draw.circle(self.screen, BLACK, self.handleY(centerDot), obj.collider.component.radius, 1)
         #========For debug. draw collider===============================================
         #========For debug, draw Trigger================================================
         for obj in self.characterObjList:
@@ -242,12 +264,12 @@ class Scene:
                         dot2[0] = round(dot2[0])
                         dot1[1] = round(dot1[1])
                         dot2[1] = round(dot2[1])
-                        pygame.draw.line(self.screen, self.RED, self.handleY(dot1), self.handleY(dot2), 1)
+                        pygame.draw.line(self.screen, RED, self.handleY(dot1), self.handleY(dot2), 1)
                 else:
                     centerDot = deepcopy(list(obj.trigger.component.centerDot))
                     centerDot[0] = round(centerDot[0])
                     centerDot[1] = round(centerDot[1])
-                    pygame.draw.circle(self.screen, self.RED, self.handleY(centerDot), obj.trigger.component.radius, 1)
+                    pygame.draw.circle(self.screen, RED, self.handleY(centerDot), obj.trigger.component.radius, 1)
         #========For debug, draw Trigger================================================
         #========For debug, draw AABB================================================
         for obj in self.characterObjList:#collideraabb
@@ -259,7 +281,7 @@ class Scene:
                     dot2[0] = round(dot2[0])
                     dot1[1] = round(dot1[1])
                     dot2[1] = round(dot2[1])
-                    pygame.draw.line(self.screen, self.GREEN, self.handleY(dot1), self.handleY(dot2), 1)
+                    pygame.draw.line(self.screen, GREEN, self.handleY(dot1), self.handleY(dot2), 1)
         for ground in self.groundObjList:#collideraabb
             if ground.collider:
                 for i in range(4):
@@ -269,13 +291,13 @@ class Scene:
                     dot2[0] = round(dot2[0])
                     dot1[1] = round(dot1[1])
                     dot2[1] = round(dot2[1])
-                    pygame.draw.line(self.screen, self.GREEN, self.handleY(dot1), self.handleY(dot2), 1)
+                    pygame.draw.line(self.screen, GREEN, self.handleY(dot1), self.handleY(dot2), 1)
         #========For debug, draw AABB================================================
         
     def renderRay(self):
         delList = []
         for i in range(len(self.rays)):
-            pygame.draw.line(self.screen, self.AQUA, self.handleY((round(self.rays[i][0][0][0]), round(self.rays[i][0][0][1]))), self.handleY((round(self.rays[i][0][1][0]), round(self.rays[i][0][1][1]))), 2)
+            pygame.draw.line(self.screen, AQUA, self.handleY((round(self.rays[i][0][0][0]), round(self.rays[i][0][0][1]))), self.handleY((round(self.rays[i][0][1][0]), round(self.rays[i][0][1][1]))), 2)
             if time.time() - self.rays[i][1] > 1:
                 delList.append(i)
 
