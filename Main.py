@@ -98,12 +98,10 @@ if __name__ == "__main__":
     def handleY(dot):
         return dot[0], SCREEN_SIZE[1]-dot[1]
 
-    scene = Scene.Scene(screen, SCREEN_SIZE=SCREEN_SIZE, FPS=FPS, debugLevel=4)
+    scene = Scene.Scene(screen, SCREEN_SIZE=SCREEN_SIZE, FPS=FPS, debugLevel=1)
     scene.addCharacterObj(TestActor(handleY([1,100])))
     scene.addCharacterObj(TestActor1(handleY([100, 100])))
     for i in range(40):
         scene.addGroundObj(TestGround(handleY([i*40, 1000])))
 
     scene.loop()
-
-    

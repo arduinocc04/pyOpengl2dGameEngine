@@ -46,7 +46,8 @@ class Scene:
         return dot[0], self.SCREEN_SIZE[1]-dot[1]
         
     def colliderCollisionCheck(self):
-        for obj in self.characterObjList:
+        for i in range(len(self.characterObjList)):
+            obj = self.characterObjList[i]
             if self.collision.AABBvsAABB(self.screenAABB, obj.collider.AABB):
                 if obj.collider:#collision detection.if collided, call collided().(characterObject)
                     if 'g' in obj.colliderSetting:
@@ -59,8 +60,9 @@ class Scene:
                                         obj.collided(ground)
 
                     if 'c' in obj.colliderSetting:
-                        for otherObj in self.characterObjList:
-                            if otherObj != obj and otherObj.collider and otherObj.allowCharacterColliding:
+                        for j in range(i+1, len(self.characterObjList)):
+                            otherObj = self.characterObjList[j]
+                            if otherObj.collider and otherObj.allowCharacterColliding:
                                 if self.collision.AABBvsAABB(obj.collider.AABB, otherObj.collider.AABB):
                                     if self.collision.isAABBCompAABB(obj.collider.AABB, otherObj.collider.AABB):
                                         obj.collided(otherObj)
@@ -71,7 +73,8 @@ class Scene:
                                             otherObj.collided(obj)
                                             
     def triggerCollisionCheck(self):
-        for obj in self.characterObjList:
+        for i in range(len(self.characterObjList)):
+            obj = self.characterObjList[i]
             if obj.trigger:#trigger collision detection
                     if 'p' in obj.triggerSetting:
                         if not obj is self.characterObjList[0] and self.characterObjList[0].collider:
@@ -83,8 +86,9 @@ class Scene:
                                         obj.triggerCollided(self.characterObjList[0])
 
                     if 'c' in obj.triggerSetting:
-                        for otherObj in characterObjList:
-                            if otherObj != obj and otherObj.collider:
+                        for j in range(i+1, len(self.characterObjList)):
+                            otherObj = self.characterObjList[j]
+                            if otherObj.collider:
                                 if self.collision.AABBvsAABB(obj.trigger.AABB, otherObj.collider.AABB):
                                     if self.collision.isAABBCompAABB(obj.trigger.AABB, otherObj.collider.AABB):
                                         obj.triggerCollided(otherObj)
@@ -155,8 +159,8 @@ class Scene:
     def loop(self):
         done = False
         keys = [False, False]
+        clicked = False
         if self.debugLevel > 3:
-            clicked = False
             fpsSlider = Slider(self.screen, lineStartDot=self.handleY((100, 1000)), width=200)
         setFps = self.FPS
         while not done:
